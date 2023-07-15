@@ -1,3 +1,3 @@
-# erohon-collector1
+# erohon-collector
 
 to be continue...
