@@ -173,5 +173,4 @@ if __name__ == '__main__':
 
     # manager.generate_headers()
     manager.batch_process(url_list, download_path)
-
-    #486465
+    
