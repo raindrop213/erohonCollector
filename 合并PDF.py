@@ -144,7 +144,7 @@ class App:
             output.write(output_pdf)
 
 if __name__ == '__main__':
-    bg = r'E:\tinytools\erohon\resources\image\bg.png'
+    bg = r'resources\image\bg.png'
     tips = '''
     使用手册
 
