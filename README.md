@@ -15,10 +15,10 @@
     - 删除页码：2 9
 
 
-3. 合并PDFs：点击 '合并PDFs' 按钮开始合并文件，
-    合并后的PDF文件会被命名为 'merged.pdf'，并保存在和此脚本相同的目录下。
+3. 合并PDFs：点击 'Merge PDFs' 按钮开始合并文件，
+    合并后的PDF文件会被命名为 'merged.pdf'，并保存在和此脚本相同的目录下,
 
 4. 如果你想要删除一个PDF文件输入框，点击页码删除字段旁边的 'x' 按钮。
 
-
+![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/tips.png)
 # ***to be continue...***
