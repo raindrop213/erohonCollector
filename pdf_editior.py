@@ -1,5 +1,6 @@
 import os
 import re
+from io import BytesIO
 from PIL import Image
 from pypdf import PdfWriter, PdfReader
 
@@ -57,7 +58,11 @@ class PDFEditor:
             images = images.convert("RGB")
             imgs.append(images)
 
-        imgs[0].save(image_folder + '.pdf', save_all=True, append_images=imgs[1:], quality=95)
+        output = BytesIO()
+        imgs[0].save(output,format='PDF', save_all=True, append_images=imgs[1:], quality=95)
+        output.seek(0)
+        return PdfReader(output)
+        
 
     def delete_pages(self, file_info):
         '''
@@ -74,16 +79,27 @@ class PDFEditor:
 
         return writer
 
-    def merge_pdfs(self, paths, output):
+    def merge_pdfs(self, readers, output):
         '''
         定义一个函数来合并多个PDF
         '''
         writer = PdfWriter()
 
-        for path in paths:
-            pdf = self.delete_pages(path)
-            for page_number in range(len(pdf.pages)):
-                writer.add_page(pdf.pages[page_number])
+        for reader in readers:
+            for page_number in range(len(reader.pages)):
+                writer.add_page(reader.pages[page_number])
+
+        with open(output, 'wb') as out:
+            writer.write(out)
+    def merge_pdfs(self, readers, output):
+        '''
+        定义一个函数来合并多个PDF
+        '''
+        writer = PdfWriter()
+
+        for reader in readers:
+            for page_number in range(len(reader.pages)):
+                writer.add_page(reader.pages[page_number])
 
         with open(output, 'wb') as out:
             writer.write(out)
@@ -91,14 +107,16 @@ class PDFEditor:
 
 if __name__ == '__main__':
 
+    # 测试功能
+    
     pdf_editor = PDFEditor()
 
-    image_folder = "download\[Silver.M个人汉化]"
+    image_folder = "download\[Silver.M]"
     pdf_editor.merge_images_to_pdf(image_folder)
 
     paths = [
-        {"file_path": "download\[Silver.M个人汉化] - 副本 - 副本.pdf", "pages_to_delete": [0, 4]},
-        {"file_path": "download\[Silver.M个人汉化] - 副本.pdf", "pages_to_delete": [1]},
-        {"file_path": "download\[Silver.M个人汉化].pdf", "pages_to_delete": [2]}
+        {"file_path": "download\[Silver.M] - 副本 - 副本.pdf", "pages_to_delete": [0, 4]},
+        {"file_path": "download\[Silver.M] - 副本.pdf", "pages_to_delete": [1]},
+        {"file_path": "download\[Silver.M].pdf", "pages_to_delete": [2]}
     ]
     pdf_editor.merge_pdfs(paths, output="merged.pdf")

@@ -3,19 +3,32 @@ import json
 import time
 import random
 import requests
+import threading
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
 from fake_useragent import UserAgent
 
 
 class BasicCrawler:
-    def __init__(self):
+    def __init__(self,
+                 headers_num: int = 7,
+                 retries: int = 5,
+                 sleep_time: float = 1,
+                 random_time: float = 0.5,
+                 **kwargs):
 
         self.headers_list = []
+        self.headers_num = headers_num
+        self.retries = retries
         self.ua = UserAgent()
+        self.sleep_time = sleep_time
+        self.random_time = random_time
 
-    def generate_headers(self, headers_num = 7):  # 生成一组headers，偶尔换一换吧
-        self.headers_list = [self.ua.random for _ in range(headers_num)]
+        self.stop_requested = threading.Event()  # 用于停止线程的标志位
+        self.pause_requested = threading.Event()  # 用于暂停线程的标志位
+
+    def generate_headers(self):  # 生成一组headers，偶尔换一换吧
+        self.headers_list = [self.ua.random for _ in range(self.headers_num)]
         with open('headers_list.json', 'w') as f:
             json.dump(self.headers_list, f)
         print('Generate headers_list.json')
@@ -25,14 +38,20 @@ class BasicCrawler:
             headers_list = json.load(f)
         headers = {'User-Agent': random.choice(headers_list)}
         return headers
-
-    def get_lxml(self, url, retries=5):  # 最多request几次？
+    
+    def get_lxml(self, url):  # 最多request几次？
+        retries = self.retries
         while retries > 0:
+            if self.stop_requested.is_set():
+                print("Stopping as requested.")
+                return
+            while self.pause_requested.is_set():
+                # 等待暂停请求被取消
+                time.sleep(1)
             try:
                 headers = self.chosen_headers()
                 res = requests.get(url, headers=headers)
-                random_time = random.uniform(.2, 1)
-                time.sleep(.5 + random_time)
+                time.sleep(self.sleep_time + random.uniform(0, self.random_time))
                 break
             except Exception as e:
                 print(f"{url} Error: {e}")
@@ -106,15 +125,14 @@ class BasicCrawler:
         src_l = src.rsplit('/', 1)[0]
 
         # 获取文件名
-        all_img = all_list.find_all('img', class_='lazyload') 
+        all_img = all_list.find_all('img', class_='lazyload')
         for i in all_img:
-            src_1 = i['data-src']
-            src_2 = "".join(src_1.rsplit("t", 1))
-            src_r = src_2.rsplit('/', 1)[-1]
-
-            # 合并成完整地址并下载
-            imgurl = src_l + '/' + src_r
-            self.download(imgurl, download)
+                src_1 = i['data-src']
+                src_2 = "".join(src_1.rsplit("t", 1))
+                src_r = src_2.rsplit('/', 1)[-1]
+                # 合并成完整地址并下载
+                imgurl = src_l + '/' + src_r
+                self.download(imgurl, download)
 
         print(f"[{url}] - done\n")
 
@@ -163,9 +181,11 @@ class BasicCrawler:
 
 if __name__ == '__main__':
 
+    # 测试功能
+
     download_path = r'download'
     url_list = [
-        'https://nhentai.net/g/311968/',
+        'https://nhentai.net/g/311968',
         'https://ehentai.to/g/397083',
     ]
 
