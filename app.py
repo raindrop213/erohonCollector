@@ -4,11 +4,12 @@ from PIL import Image, ImageTk
 from pdf_editior import PDFMerger
 from pic_collector import BasicCrawler
 import sys
+import time
 import os
 
 
 class WebsiteEntry(customtkinter.CTkFrame):
-    def __init__(self, master, command_add=None, command_remove=None, **kwargs):
+    def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
         self.configure(border_width=1)
         self.grid_columnconfigure((0, 2, 4), weight=0)  # buttons don't expand
@@ -20,10 +21,10 @@ class WebsiteEntry(customtkinter.CTkFrame):
         self.entry = customtkinter.CTkEntry(self, border_width=0)
         self.entry.grid(row=0, column=1, columnspan=1, padx=5, pady=5, sticky="ew")
 
-        self.add_button = customtkinter.CTkButton(self, text="+", width=25, command=command_add)
+        self.add_button = customtkinter.CTkButton(self, text="+", width=25, command=self.add_entry)
         self.add_button.grid(row=0, column=2, padx=(0, 3), pady=5)
 
-        self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=command_remove)
+        self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=self.remove_entry)
         self.remove_button.grid(row=0, column=3, padx=(0, 5), pady=5)
 
     def get(self):
@@ -33,13 +34,49 @@ class WebsiteEntry(customtkinter.CTkFrame):
         self.entry.delete(0, "end")
         self.entry.insert(0, value)
 
+    def add_entry(self):
+        self.master.add_entry_after(self)
+
+    def remove_entry(self):
+        self.master.remove_entry(self)
+
+class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
+    def __init__(self, master, title):
+        super().__init__(master, label_text=title, scrollbar_button_color="gray50")
+        self.grid_columnconfigure(0, weight=1)
+
+        self.entries = []
+        for _ in range(3):
+            self.add_entry(None)
+
+    def add_entry(self, after=None):
+        new_entry = WebsiteEntry(self)
+        if after is not None:
+            index = self.entries.index(after) + 1
+            self.entries.insert(index, new_entry)
+        else:
+            self.entries.append(new_entry)
+        self.rearrange_entries()
+
+    def add_entry_after(self, website_entry):
+        self.add_entry(website_entry)
+
+    def remove_entry(self, website_entry):
+        if len(self.entries) > 1 and website_entry in self.entries:
+            website_entry.grid_forget()
+            self.entries.remove(website_entry)
+            self.rearrange_entries()
+
+    def rearrange_entries(self):
+        for i, entry in enumerate(self.entries):
+            entry.grid(row=i, column=0, padx=(0,3), pady=(0,6), sticky="ew")
+
 
 class PathEntry(customtkinter.CTkFrame):
     def __init__(self, master, command_add=None, command_remove=None, **kwargs):
         super().__init__(master, **kwargs)
         self.configure(border_width=1)
-        self.grid_columnconfigure((0, 2, 4), weight=0)  # buttons don't expand
-        self.grid_columnconfigure(1, weight=1)  # entry expands
+        self.grid_columnconfigure(1, weight=1)
 
         self.label = customtkinter.CTkLabel(self, text="Path")
         self.label.grid(row=0, column=0, padx=(5, 0), pady=5, sticky="w")
@@ -55,16 +92,16 @@ class PathEntry(customtkinter.CTkFrame):
         self.select_dir_button = customtkinter.CTkButton(self, text="...", width=25, command=select_dir)
         self.select_dir_button.grid(row=0, column=3, padx=(0, 5), pady=5, sticky="ew")
 
-        self.del_label = customtkinter.CTkLabel(self, text="Delet")
+        self.del_label = customtkinter.CTkLabel(self, text="Delete")
         self.del_label.grid(row=1, column=0, padx=(5, 0), pady=(0, 5), sticky="w")
 
         self.del_entry = customtkinter.CTkEntry(self, border_width=0)
         self.del_entry.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="ew")
 
-        self.add_button = customtkinter.CTkButton(self, text="+", width=25, command=command_add)
+        self.add_button = customtkinter.CTkButton(self, text="+", width=25, command=lambda: command_add(self))
         self.add_button.grid(row=1, column=2, padx=(0, 3), pady=(0, 5))
 
-        self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=command_remove)
+        self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=lambda: command_remove(self))
         self.remove_button.grid(row=1, column=3, padx=(0, 5), pady=(0, 5))
 
     def get_path(self):
@@ -81,31 +118,6 @@ class PathEntry(customtkinter.CTkFrame):
         self.del_entry.delete(0, "end")
         self.del_entry.insert(0, value)
 
-
-class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
-    def __init__(self, master, title):
-        super().__init__(master, label_text=title, scrollbar_button_color="gray50")
-        self.grid_columnconfigure(0, weight=1)
-
-        self.entries = []
-        for _ in range(3):
-            self.add_entry()
-
-    def add_entry(self):
-        entry_row = len(self.entries) + 1
-
-        website_entry = WebsiteEntry(self, command_add=self.add_entry, command_remove=self.remove_entry)
-        website_entry.grid(row=entry_row, column=0, padx=(0,3), pady=(0,6), sticky="ew")
-
-        self.entries.append(website_entry)
-
-    def remove_entry(self):
-        if len(self.entries) > 1:
-            entry_to_remove = self.entries[-1]
-            entry_to_remove.grid_forget()
-            self.entries.remove(entry_to_remove)
-
-
 class BlockPathEntry(customtkinter.CTkScrollableFrame):
     def __init__(self, master, title):
         super().__init__(master, label_text=title, scrollbar_button_color="gray50")
@@ -115,19 +127,26 @@ class BlockPathEntry(customtkinter.CTkScrollableFrame):
         for _ in range(2):
             self.add_entry()
 
-    def add_entry(self):
-        entry_row = len(self.entries) + 1
+    def add_entry(self, path_entry=None):
+        if not path_entry:
+            path_entry = PathEntry(self, command_add=self.add_entry, command_remove=self.remove_entry)
+            self.entries.append(path_entry)
+        else:
+            idx = self.entries.index(path_entry) + 1
+            new_path_entry = PathEntry(self, command_add=self.add_entry, command_remove=self.remove_entry)
+            self.entries.insert(idx, new_path_entry)
+        
+        self.rearrange_entries()
 
-        path_entry = PathEntry(self, command_add=self.add_entry, command_remove=self.remove_entry)
-        path_entry.grid(row=entry_row, column=0, padx=(0,3), pady=(0,6), sticky="ew")
-
-        self.entries.append(path_entry)
-
-    def remove_entry(self):
+    def remove_entry(self, path_entry):
         if len(self.entries) > 1:
-            entry_to_remove = self.entries[-1]
-            entry_to_remove.grid_forget()
-            self.entries.remove(entry_to_remove)
+            path_entry.grid_forget()
+            self.entries.remove(path_entry)
+            self.rearrange_entries()
+
+    def rearrange_entries(self):
+        for i, entry in enumerate(self.entries):
+            entry.grid(row=i, column=0, padx=(0,3), pady=(0,6), sticky="ew")
 
 
 class DirectoryWebsiteEntry(customtkinter.CTkFrame):
@@ -149,15 +168,12 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
         self.select_dir_button = customtkinter.CTkButton(self, text="...", width=25, command=select_dir)
         self.select_dir_button.grid(row=1, column=2, padx=(0, 5), pady=(0,5), sticky="ew")
 
-
-
     def get(self):
         return self.entry.get()
 
     def set(self, value):
         self.entry.delete(0, "end")
         self.entry.insert(0, value)
-
 
 class DirectoryPathEntry(customtkinter.CTkFrame):
     def __init__(self, master, label_text, **kwargs):
@@ -170,7 +186,7 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
 
         # 切换选择文件或文件夹的按钮
         self.segmented_button = customtkinter.CTkSegmentedButton(self, values=["All", "Single"], command=self.segmented_button_callback)
-        self.segmented_button.grid(row=0, column=1, padx=(0, 5), pady=5, sticky="ew")
+        self.segmented_button.grid(row=0, column=1, columnspan=2, padx=(0, 5), pady=5, sticky="ew")
         self.segmented_button.set("All")
 
         self.label = customtkinter.CTkLabel(self, text=label_text)
@@ -237,10 +253,10 @@ class App(customtkinter.CTk):
         customtkinter.set_appearance_mode("system")  # dark light system
 
         self.title("my app")
-        self.geometry("900x900")
+        self.geometry("900x1000")
 
         self.grid_columnconfigure(2, weight=1)
-        self.grid_rowconfigure((0, 2, 3, 4), weight=1)
+        self.grid_rowconfigure((0, 2, 4), weight=1)
 
         
         # 添加半透明的背景图像
@@ -256,14 +272,14 @@ class App(customtkinter.CTk):
         self.background_label.grid(row=0, column=2, padx=10, pady=(10, 5), sticky="nsew", rowspan=5)
         
 
-
         # Download Images
         self.website_entry_frame = BlockWebsiteEntry(self, title="Download Images")
         self.website_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         
         self.download_path_entry = DirectoryWebsiteEntry(self, label_text="Download Path")
         self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
-
+        
+        self.crawler = BasicCrawler()
         self.download_button = customtkinter.CTkButton(self, text="Download", command=self.download_images)
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
 
@@ -289,20 +305,18 @@ class App(customtkinter.CTk):
         self.button = customtkinter.CTkButton(self, text="clear message", command=self.button_clear_callback)
         self.button.grid(row=5, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
 
-        # 开始\暂停\结束 按钮
-        self.crawler = BasicCrawler()
-        self.pause_button = customtkinter.CTkButton(self, text="Pause", command=self.pause_download)
-        self.pause_button.grid(row=6, column=0, padx=(5, 10), pady=(5, 10), sticky="w")
-
-        self.resume_button = customtkinter.CTkButton(self, text="Resume", command=self.resume_download)
-        self.resume_button.grid(row=6, column=1, padx=(10, 5), pady=(5, 10), sticky="e")
-
-        self.stop_button = customtkinter.CTkButton(self, text="Stop", command=self.stop_download)
-        self.stop_button.grid(row=6, column=2, padx=(10, 5), pady=(5, 10), sticky="e")
+        
+        # 暂停\结束 按钮
+        self.pause_button = customtkinter.CTkButton(self, text="Pause",width=80, fg_color='#af2726', command=self.pause_download)
+        self.stop_button = customtkinter.CTkButton(self, text="Stop", width=50, fg_color='#af2726', command=self.stop_download)
 
         # 重定向 stdout 和 stderr
         sys.stdout = TextRedirector(self.text_1, sys.stdout)
         sys.stderr = TextRedirector(self.text_1, sys.stderr)
+
+        # 关闭GUI前结束所有任务
+        self.protocol("WM_DELETE_WINDOW", self.close_event)
+
 
 
     def button_callback(self):
@@ -316,20 +330,35 @@ class App(customtkinter.CTk):
 
 
     def download_images_in_background(self):
-        self.download_button.configure(text="Running...")
-        print('\033[31m' + '- Running download... -' + '\033[0m')
+        print('\n- Running download... -\n\n')
         download_path = self.download_path_entry.get().strip()
         url_list = [entry.get() for entry in self.website_entry_frame.entries if entry.get().strip()]
         if download_path and url_list:
-            self.crawler.batch_process(url_list, download_path)
+
+            # Hide the Download button, show the Pause and Stop buttons
+            self.download_button.grid_remove()
+            self.pause_button.grid(row=1, column=1, padx=(5, 0), pady=(5, 10), sticky="nsw")
+            self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+
+            time.sleep(5)
+            # self.crawler.batch_process(url_list, download_path)
         else:
             print("Please set Download path and URL")
-        self.download_button.configure(text="Download")
+
+        # Show the Download button, hide the Pause and Stop buttons
+        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+        self.pause_button.grid_remove()
+        self.stop_button.grid_remove()
         self.text_1.insert("end", '\n- Download Images finished-\n\n')
+
+    def download_images(self):
+        self.stop_event.clear()
+        self.current_thread = threading.Thread(target=self.download_images_in_background, daemon=True)
+        self.current_thread.start()
+    
         
     def merge_pdf_in_background(self):
-        self.merge_button.configure(text="Running...")
-        print('\033[31m' + '- Running merge PDFs... -' + '\033[0m')
+        print('\n- Running merge PDFs... -\n\n')
         paths = []
         for entry in self.path_entry_frame.entries:
             filepath = entry.get_path().strip()
@@ -345,14 +374,7 @@ class App(customtkinter.CTk):
         
         merger = PDFMerger(paths, output_path, merge_all=True)
         merger.merge()
-        self.merge_button.configure(text="Merge")
-        self.text_1.insert("end", '\n- Merge PDFs finished-\n\n')
-
-
-    def download_images(self):
-        self.stop_event.clear()
-        self.current_thread = threading.Thread(target=self.download_images_in_background)
-        self.current_thread.start()
+        self.text_1.insert("end", '\n- Merge PDFs finished -\n\n')
 
     def merge_pdf(self):
         self.stop_event.clear()
@@ -362,21 +384,31 @@ class App(customtkinter.CTk):
 
     def pause_download(self):
         self.crawler.pause_requested.set()
-        self.download_button.configure(text="Download")
         self.text_1.insert("end", '\n- Pause download -\n\n')
+        # Change the text and the command of the Pause button to Resume
+        self.pause_button.configure(text="Resume", fg_color='#34a046', command=self.resume_download)
 
     def resume_download(self):
         self.crawler.pause_requested.clear()
-        self.crawler.pause_requested.clear()
-        self.download_button.configure(text="Running...")
         self.text_1.insert("end", '\n- Resume download -\n\n')
+        # Change the text and the command of the Resume button back to Pause
+        self.pause_button.configure(text="Pause", fg_color='#af2726', command=self.pause_download)
 
     def stop_download(self):
         self.crawler.stop_requested.set()
-        self.crawler.stop_requested.set()
         self.download_button.configure(text="Download")
         self.text_1.insert("end", '\n- Stop download -\n\n')
+
+        # Hide the Pause and Stop buttons, show the Download button
+        self.pause_button.grid_remove()
+        self.stop_button.grid_remove()
+        self.download_button.grid()
         
+    def close_event(self):
+        self.stop_download()
+        if hasattr(self, 'current_thread'):  # Check if 'current_thread' has been set
+            self.current_thread.join(timeout=1) 
+        self.destroy()
 
 
 bg = r'resources\image\bg.png'
@@ -388,36 +420,3 @@ tips = r'''
 
 app = App()
 app.mainloop()
-
-
-# tips = r'''
-# ┏━━━━━┓
-# ┃ 使用  指南 ┃
-# ┗━━━━━┛
-
-# 【图片爬取】
-
-# 1. 填入下载路径
-
-# 2. 填入链接（预览图界面！！！）
-
-
-# 【PDF编辑】
-
-# 1. 添加PDF：点击 '添加PDF' 
-#     增加一个新的PDF文件输入框
-#     你可以根据需要添加任意多个
-
-# 2. 在每个PDF文件输入框中：
-#     - 文件名：输入你想要合并的PDF文件的完整路径
-#     - 删除页码：输入该PDF文件中想删掉的页码，页码之间用空格分开
-
-# 例：PDF文件路径 'E:\download\erohon\sample.pdf'，要删除第2页和第9页
-# - 文件名：path/to/your/sample.pdf
-# - 删除页码：2 9
-
-# 3. 合并PDFs：点击 '合并PDFs' 按钮开始合并文件，
-#     合并后的PDF文件会被命名为 'merged.pdf'，并保存在和此脚本相同的目录下
-
-# 4. 如果你想要删除一个PDF文件输入框，点击页码删除字段旁边的 'x' 按钮
-# '''
