@@ -1,8 +1,8 @@
 import customtkinter
 import threading
 from PIL import Image, ImageTk
-from pdf_editior import PDFMerger
-from pic_collector import BasicCrawler
+from src.pdf_merge import PDFMerger
+from src.pic_collector import BasicCrawler
 import sys
 import time
 import os
@@ -253,7 +253,7 @@ class App(customtkinter.CTk):
         customtkinter.set_appearance_mode("system")  # dark light system
 
         self.title("my app")
-        self.geometry("900x1000")
+        self.geometry("870x870")
 
         self.grid_columnconfigure(2, weight=1)
         self.grid_rowconfigure((0, 2, 4), weight=1)
@@ -416,6 +416,29 @@ tips = r'''
 ┏━━━━━┓
 ┃ 使用  指南 ┃
 ┗━━━━━┛
+
+- Part A -
+
+1. URL填写要爬取的网站页面
+
+2. 点击 'Download' 下载
+   点击 'Pause'/'resume' 暂停/开始
+   点击 'stop' 终止下载
+
+
+- Part B -
+
+1. 在每个PDF文件输入框中：
+    - 文件名：输入你想要合并的PDF文件的完整路径
+    - 删除页码：输入该PDF文件中想删掉的页码，页码之间用空格分开，留空则不删除
+
+    例：PDF文件路径 'E:\download\erohon\sample-1.pdf' 要删除第2页和第9页
+    - 文件名：path/to/your/sample-1.pdf
+    - 删除页码：2 9
+
+3. 合并PDFs：点击 'Merge' 按钮开始合并文件
+    All：全部文件夹的图片合成到一个PDF
+    Single：全部文件夹分别合成各自的PDF
 '''
 
 app = App()
