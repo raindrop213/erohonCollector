@@ -250,9 +250,9 @@ class App(customtkinter.CTk):
         self.stop_event = threading.Event()
         
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
-        customtkinter.set_appearance_mode("system")  # dark light system
+        customtkinter.set_appearance_mode("dark")  # dark light system
 
-        self.title("my app")
+        self.title("Erohon Collector")
         self.geometry("870x870")
 
         self.grid_columnconfigure(2, weight=1)
@@ -307,7 +307,7 @@ class App(customtkinter.CTk):
 
         
         # 暂停\结束 按钮
-        self.pause_button = customtkinter.CTkButton(self, text="Pause",width=80, fg_color='#af2726', command=self.pause_download)
+        self.pause_button = customtkinter.CTkButton(self, text="Pause",width=85, fg_color='#af2726', command=self.pause_download)
         self.stop_button = customtkinter.CTkButton(self, text="Stop", width=50, fg_color='#af2726', command=self.stop_download)
 
         # 重定向 stdout 和 stderr
@@ -316,7 +316,6 @@ class App(customtkinter.CTk):
 
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
-
 
 
     def button_callback(self):
@@ -355,8 +354,8 @@ class App(customtkinter.CTk):
         self.stop_event.clear()
         self.current_thread = threading.Thread(target=self.download_images_in_background, daemon=True)
         self.current_thread.start()
-    
-        
+
+
     def merge_pdf_in_background(self):
         print('\n- Running merge PDFs... -\n\n')
         paths = []
@@ -398,16 +397,15 @@ class App(customtkinter.CTk):
         self.crawler.stop_requested.set()
         self.download_button.configure(text="Download")
         self.text_1.insert("end", '\n- Stop download -\n\n')
-
         # Hide the Pause and Stop buttons, show the Download button
         self.pause_button.grid_remove()
         self.stop_button.grid_remove()
         self.download_button.grid()
-        
+
     def close_event(self):
         self.stop_download()
-        if hasattr(self, 'current_thread'):  # Check if 'current_thread' has been set
-            self.current_thread.join(timeout=1) 
+        if hasattr(self, 'current_thread'):
+            self.current_thread.join(timeout=1)
         self.destroy()
 
 
