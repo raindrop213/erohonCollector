@@ -20,5 +20,5 @@
 
 4. 如果你想要删除一个PDF文件输入框，点击页码删除字段旁边的 'x' 按钮。
 
-![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/tips.png)
+![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/preview.png)
 # ***to be continue...***

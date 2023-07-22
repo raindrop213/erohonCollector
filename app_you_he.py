@@ -6,25 +6,49 @@ from pic_collector import BasicCrawler
 import sys
 import os
 
+class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
+    def __init__(self, master, title):
+        super().__init__(master, label_text=title, scrollbar_button_color="gray50")
+        self.grid_columnconfigure(0, weight=1)
 
-class WebsiteEntry(customtkinter.CTkFrame):
-    def __init__(self, master, command_add=None, command_remove=None, **kwargs):
-        super().__init__(master, **kwargs)
-        self.configure(border_width=1)
-        self.grid_columnconfigure((0, 2, 4), weight=0)  # buttons don't expand
-        self.grid_columnconfigure(1, weight=1)  # entry expands
+        self.entries = []
+        for _ in range(3):
+            self.add_entry()
 
-        self.label = customtkinter.CTkLabel(self, text="URL")
-        self.label.grid(row=0, column=0, padx=(5, 0), pady=5, sticky="w")
+    def add_entry(self, idx=None):
+        new_entry_frame = customtkinter.CTkFrame(self, border_width=1)
+        new_entry_frame.grid_columnconfigure(1, weight=1)  # entry expands
 
-        self.entry = customtkinter.CTkEntry(self, border_width=0)
-        self.entry.grid(row=0, column=1, columnspan=1, padx=5, pady=5, sticky="ew")
+        new_entry_label = customtkinter.CTkLabel(new_entry_frame, text="URL")
+        new_entry_label.grid(row=0, column=0, padx=(5, 0), pady=5, sticky="w")
 
-        self.add_button = customtkinter.CTkButton(self, text="+", width=25, command=command_add)
-        self.add_button.grid(row=0, column=2, padx=(0, 3), pady=5)
+        new_entry = customtkinter.CTkEntry(new_entry_frame, border_width=0)
+        new_entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew")
 
-        self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=command_remove)
-        self.remove_button.grid(row=0, column=3, padx=(0, 5), pady=5)
+        add_button = customtkinter.CTkButton(new_entry_frame, text="+", width=25,
+                                              command=lambda: self.add_entry(self.entries.index(new_entry_frame) + 1))
+        add_button.grid(row=0, column=2, padx=(0, 3), pady=5)
+
+        remove_button = customtkinter.CTkButton(new_entry_frame, text="-", width=25,
+                                                command=lambda: self.remove_entry(new_entry_frame))
+        remove_button.grid(row=0, column=3, padx=(0, 5), pady=5)
+
+        if idx is not None:
+            self.entries.insert(idx, new_entry_frame)
+        else:
+            self.entries.append(new_entry_frame)
+        
+        self.rearrange_entries()
+
+    def remove_entry(self, entry_frame):
+        if len(self.entries) > 1:
+            entry_frame.grid_forget()
+            self.entries.remove(entry_frame)
+            self.rearrange_entries()
+
+    def rearrange_entries(self):
+        for i, entry in enumerate(self.entries):
+            entry.grid(row=i, column=0, padx=(0,3), pady=(0,6), sticky="ew")
 
     def get(self):
         return self.entry.get()
@@ -34,38 +58,67 @@ class WebsiteEntry(customtkinter.CTkFrame):
         self.entry.insert(0, value)
 
 
-class PathEntry(customtkinter.CTkFrame):
-    def __init__(self, master, command_add=None, command_remove=None, **kwargs):
-        super().__init__(master, **kwargs)
-        self.configure(border_width=1)
-        self.grid_columnconfigure((0, 2, 4), weight=0)  # buttons don't expand
-        self.grid_columnconfigure(1, weight=1)  # entry expands
+class BlockPathEntry(customtkinter.CTkScrollableFrame):
+    def __init__(self, master, title):
+        super().__init__(master, label_text=title, scrollbar_button_color="gray50")
+        self.grid_columnconfigure(0, weight=1)
 
-        self.label = customtkinter.CTkLabel(self, text="Path")
-        self.label.grid(row=0, column=0, padx=(5, 0), pady=5, sticky="w")
+        self.entries = []
+        for _ in range(2):
+            self.add_entry()
 
-        self.entry = customtkinter.CTkEntry(self, border_width=0)
-        self.entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew", columnspan=2)
+    def add_entry(self, path_entry=None):
+        if not path_entry:
+            path_entry = self.create_entry()
+            self.entries.append(path_entry)
+        else:
+            idx = self.entries.index(path_entry) + 1
+            new_path_entry = self.create_entry()
+            self.entries.insert(idx, new_path_entry)
+
+        self.rearrange_entries()
+
+    def remove_entry(self, path_entry):
+        if len(self.entries) > 1:
+            path_entry.grid_forget()
+            self.entries.remove(path_entry)
+            self.rearrange_entries()
+
+    def rearrange_entries(self):
+        for i, entry in enumerate(self.entries):
+            entry.grid(row=i, column=0, padx=(0,3), pady=(0,6), sticky="ew")
+
+    def create_entry(self):
+        entry = customtkinter.CTkFrame(self)
+        entry.configure(border_width=1)
+        entry.grid_columnconfigure((0, 2, 4), weight=0)
+        entry.grid_columnconfigure(1, weight=1)
+
+        entry.label = customtkinter.CTkLabel(entry, text="Path")
+        entry.label.grid(row=0, column=0, padx=(5, 0), pady=5, sticky="w")
+
+        entry.entry = customtkinter.CTkEntry(entry, border_width=0)
+        entry.entry.grid(row=0, column=1, padx=5, pady=5, sticky="ew", columnspan=2)
 
         def select_dir():
             download_dir = customtkinter.filedialog.askdirectory()
-            self.entry.delete(0, customtkinter.END)
-            self.entry.insert(0, download_dir)
+            entry.entry.delete(0, customtkinter.END)
+            entry.entry.insert(0, download_dir)
 
-        self.select_dir_button = customtkinter.CTkButton(self, text="...", width=25, command=select_dir)
-        self.select_dir_button.grid(row=0, column=3, padx=(0, 5), pady=5, sticky="ew")
+        entry.select_dir_button = customtkinter.CTkButton(entry, text="...", width=25, command=select_dir)
+        entry.select_dir_button.grid(row=0, column=3, padx=(0, 5), pady=5, sticky="ew")
 
-        self.del_label = customtkinter.CTkLabel(self, text="Delet")
-        self.del_label.grid(row=1, column=0, padx=(5, 0), pady=(0, 5), sticky="w")
+        entry.del_label = customtkinter.CTkLabel(entry, text="Delete")
+        entry.del_label.grid(row=1, column=0, padx=(5, 0), pady=(0, 5), sticky="w")
 
-        self.del_entry = customtkinter.CTkEntry(self, border_width=0)
-        self.del_entry.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="ew")
+        entry.del_entry = customtkinter.CTkEntry(entry, border_width=0)
+        entry.del_entry.grid(row=1, column=1, padx=5, pady=(0, 5), sticky="ew")
 
-        self.add_button = customtkinter.CTkButton(self, text="+", width=25, command=command_add)
-        self.add_button.grid(row=1, column=2, padx=(0, 3), pady=(0, 5))
+        entry.add_button = customtkinter.CTkButton(entry, text="+", width=25, command=lambda: self.add_entry(entry))
+        entry.add_button.grid(row=1, column=2, padx=(0, 3), pady=(0, 5))
 
-        self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=command_remove)
-        self.remove_button.grid(row=1, column=3, padx=(0, 5), pady=(0, 5))
+        entry.remove_button = customtkinter.CTkButton(entry, text="-", width=25, command=lambda: self.remove_entry(entry))
+        entry.remove_button.grid(row=1, column=3, padx=(0, 5), pady=(0, 5))
 
     def get_path(self):
         return self.entry.get()
@@ -80,54 +133,6 @@ class PathEntry(customtkinter.CTkFrame):
     def set_del(self, value):
         self.del_entry.delete(0, "end")
         self.del_entry.insert(0, value)
-
-
-class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
-    def __init__(self, master, title):
-        super().__init__(master, label_text=title, scrollbar_button_color="gray50")
-        self.grid_columnconfigure(0, weight=1)
-
-        self.entries = []
-        for _ in range(3):
-            self.add_entry()
-
-    def add_entry(self):
-        entry_row = len(self.entries) + 1
-
-        website_entry = WebsiteEntry(self, command_add=self.add_entry, command_remove=self.remove_entry)
-        website_entry.grid(row=entry_row, column=0, padx=(0,3), pady=(0,6), sticky="ew")
-
-        self.entries.append(website_entry)
-
-    def remove_entry(self):
-        if len(self.entries) > 1:
-            entry_to_remove = self.entries[-1]
-            entry_to_remove.grid_forget()
-            self.entries.remove(entry_to_remove)
-
-
-class BlockPathEntry(customtkinter.CTkScrollableFrame):
-    def __init__(self, master, title):
-        super().__init__(master, label_text=title, scrollbar_button_color="gray50")
-        self.grid_columnconfigure(0, weight=1)
-
-        self.entries = []
-        for _ in range(2):
-            self.add_entry()
-
-    def add_entry(self):
-        entry_row = len(self.entries) + 1
-
-        path_entry = PathEntry(self, command_add=self.add_entry, command_remove=self.remove_entry)
-        path_entry.grid(row=entry_row, column=0, padx=(0,3), pady=(0,6), sticky="ew")
-
-        self.entries.append(path_entry)
-
-    def remove_entry(self):
-        if len(self.entries) > 1:
-            entry_to_remove = self.entries[-1]
-            entry_to_remove.grid_forget()
-            self.entries.remove(entry_to_remove)
 
 
 class DirectoryWebsiteEntry(customtkinter.CTkFrame):
@@ -148,8 +153,6 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
             self.entry.insert(0, directory)
         self.select_dir_button = customtkinter.CTkButton(self, text="...", width=25, command=select_dir)
         self.select_dir_button.grid(row=1, column=2, padx=(0, 5), pady=(0,5), sticky="ew")
-
-
 
     def get(self):
         return self.entry.get()
@@ -237,10 +240,10 @@ class App(customtkinter.CTk):
         customtkinter.set_appearance_mode("system")  # dark light system
 
         self.title("my app")
-        self.geometry("900x900")
+        self.geometry("900x1000")
 
         self.grid_columnconfigure(2, weight=1)
-        self.grid_rowconfigure((0, 2, 3, 4), weight=1)
+        self.grid_rowconfigure((0, 2, 4), weight=1)
 
         
         # 添加半透明的背景图像
@@ -388,36 +391,3 @@ tips = r'''
 
 app = App()
 app.mainloop()
-
-
-# tips = r'''
-# ┏━━━━━┓
-# ┃ 使用  指南 ┃
-# ┗━━━━━┛
-
-# 【图片爬取】
-
-# 1. 填入下载路径
-
-# 2. 填入链接（预览图界面！！！）
-
-
-# 【PDF编辑】
-
-# 1. 添加PDF：点击 '添加PDF' 
-#     增加一个新的PDF文件输入框
-#     你可以根据需要添加任意多个
-
-# 2. 在每个PDF文件输入框中：
-#     - 文件名：输入你想要合并的PDF文件的完整路径
-#     - 删除页码：输入该PDF文件中想删掉的页码，页码之间用空格分开
-
-# 例：PDF文件路径 'E:\download\erohon\sample.pdf'，要删除第2页和第9页
-# - 文件名：path/to/your/sample.pdf
-# - 删除页码：2 9
-
-# 3. 合并PDFs：点击 '合并PDFs' 按钮开始合并文件，
-#     合并后的PDF文件会被命名为 'merged.pdf'，并保存在和此脚本相同的目录下
-
-# 4. 如果你想要删除一个PDF文件输入框，点击页码删除字段旁边的 'x' 按钮
-# '''

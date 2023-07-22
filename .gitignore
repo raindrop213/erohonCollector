@@ -1,3 +1,4 @@
-erohonEnv
+.venv
+venv
 download/*
 *.pdf

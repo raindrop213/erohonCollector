@@ -43,11 +43,11 @@ class BasicCrawler:
         retries = self.retries
         while retries > 0:
             if self.stop_requested.is_set():
-                print("Stopping as requested.")
-                return
+                print("Already Over!")
+                exit()
             while self.pause_requested.is_set():
                 # 等待暂停请求被取消
-                time.sleep(1)
+                time.sleep(0.5)
             try:
                 headers = self.chosen_headers()
                 res = requests.get(url, headers=headers)
@@ -62,6 +62,7 @@ class BasicCrawler:
         return res
 
     def download(self, src, filepath):  # 下载对应文件
+
         try:
             filename = src.split("/")[-1]
             fullpath = os.path.join(filepath, filename)
@@ -185,7 +186,7 @@ if __name__ == '__main__':
 
     download_path = r'download'
     url_list = [
-        'https://nhentai.net/g/311968',
+        'https://ehentai.to/g/388535',
         'https://ehentai.to/g/397083',
     ]
 
