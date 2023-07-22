@@ -11,8 +11,7 @@ import os
 class WebsiteEntry(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
-        self.configure(border_width=1)
-        self.grid_columnconfigure((0, 2, 4), weight=0)  # buttons don't expand
+        self.configure(border_width=1.2)
         self.grid_columnconfigure(1, weight=1)  # entry expands
 
         self.label = customtkinter.CTkLabel(self, text="URL")
@@ -75,7 +74,8 @@ class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
 class PathEntry(customtkinter.CTkFrame):
     def __init__(self, master, command_add=None, command_remove=None, **kwargs):
         super().__init__(master, **kwargs)
-        self.configure(border_width=1)
+        self.configure(border_width=1.2)
+        self.grid_rowconfigure(1, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         self.label = customtkinter.CTkLabel(self, text="Path")
@@ -199,7 +199,6 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
     def segmented_button_callback(self, value):
         value_dict = {"All": 'file', "Single": 'dir'}
         selet = value_dict.get(value, "Unknown value")
-        print("segmented button clicked:", value_dict.get(value, "Unknown value"))
 
         if selet == 'file':
             self.entry.delete(0, "end")  # delete all text
@@ -250,7 +249,7 @@ class App(customtkinter.CTk):
         self.stop_event = threading.Event()
         
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
-        customtkinter.set_appearance_mode("dark")  # dark light system
+        customtkinter.set_appearance_mode("light")  # dark light system
 
         self.title("Erohon Collector")
         self.geometry("870x870")
@@ -262,11 +261,9 @@ class App(customtkinter.CTk):
         # 添加半透明的背景图像
         image = Image.open(bg)  # 使用你的背景图像文件名替换"background.jpg"
         image = image.convert("RGBA")
-        image_light = Image.blend(Image.new("RGBA", image.size), image, alpha=0.4)
-        image_dark = Image.blend(Image.new("RGBA", image.size), image, alpha=0.9)
-
-        self.background_image = ImageTk.PhotoImage(image_light)
-        # self.background_image = customtkinter.CTkImage(light_image=image_light, dark_image=image_dark, size=image.size)
+        image_light = Image.blend(Image.new("RGBA", image.size), image, alpha=0.7)
+        image_dark = Image.blend(Image.new("RGBA", image.size), image, alpha=0.5)
+        self.background_image = customtkinter.CTkImage(light_image=image_light, dark_image=image_dark, size=image.size)
 
         self.background_label = customtkinter.CTkLabel(self, text=tips, image=self.background_image)
         self.background_label.grid(row=0, column=2, padx=10, pady=(10, 5), sticky="nsew", rowspan=5)
@@ -329,7 +326,6 @@ class App(customtkinter.CTk):
 
 
     def download_images_in_background(self):
-        print('\n- Running download... -\n\n')
         download_path = self.download_path_entry.get().strip()
         url_list = [entry.get() for entry in self.website_entry_frame.entries if entry.get().strip()]
         if download_path and url_list:
@@ -338,9 +334,9 @@ class App(customtkinter.CTk):
             self.download_button.grid_remove()
             self.pause_button.grid(row=1, column=1, padx=(5, 0), pady=(5, 10), sticky="nsw")
             self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-
-            time.sleep(5)
-            # self.crawler.batch_process(url_list, download_path)
+            
+            print('- Running download... -')
+            self.crawler.batch_process(url_list, download_path)
         else:
             print("Please set Download path and URL")
 
@@ -348,7 +344,7 @@ class App(customtkinter.CTk):
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
         self.pause_button.grid_remove()
         self.stop_button.grid_remove()
-        self.text_1.insert("end", '\n- Download Images finished-\n\n')
+        self.text_1.insert("end", '- Download Images finished-\n\n')
 
     def download_images(self):
         self.stop_event.clear()
@@ -357,7 +353,6 @@ class App(customtkinter.CTk):
 
 
     def merge_pdf_in_background(self):
-        print('\n- Running merge PDFs... -\n\n')
         paths = []
         for entry in self.path_entry_frame.entries:
             filepath = entry.get_path().strip()
@@ -368,12 +363,14 @@ class App(customtkinter.CTk):
                 else:
                     pages = []
                 paths.append({"file_path": filepath, "pages_to_delete": pages})
+
         output_file = "merged.pdf"
         output_path = os.path.join(self.output_path_entry.get().strip(), output_file)
-        
         merger = PDFMerger(paths, output_path, merge_all=True)
         merger.merge()
-        self.text_1.insert("end", '\n- Merge PDFs finished -\n\n')
+        self.text_1.insert("end", '- Merge PDFs finished -\n\n')
+
+        
 
     def merge_pdf(self):
         self.stop_event.clear()

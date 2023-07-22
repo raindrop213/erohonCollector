@@ -12,19 +12,22 @@ class PDFMerger:
         return int(re.findall(r'\d+', s)[0])
 
     def merge(self):
-        all_images = []
-        for path in self.paths:
-            foldername = path["file_path"]
-            pages_to_delete = path["pages_to_delete"]
-            if os.path.isdir(foldername):
-                images = [img for i, img in enumerate(sorted(os.listdir(foldername), key=self.sort_key)) if (img.endswith('.jpg') or img.endswith('.png')) and i+1 not in pages_to_delete]
-                images = [Image.open(os.path.join(foldername, img)) for img in images]
-                if not self.merge_all:
-                    images[0].save(os.path.join(self.file_path, f'{os.path.basename(foldername)}.pdf'),  quality=95, resolution=100, save_all=True, append_images=images[1:])
-                all_images.extend(images)
+        try:
+            all_images = []
+            for path in self.paths:
+                foldername = path["file_path"]
+                pages_to_delete = path["pages_to_delete"]
+                if os.path.isdir(foldername):
+                    images = [img for i, img in enumerate(sorted(os.listdir(foldername), key=self.sort_key)) if (img.endswith('.jpg') or img.endswith('.png')) and i+1 not in pages_to_delete]
+                    images = [Image.open(os.path.join(foldername, img)) for img in images]
+                    if not self.merge_all:
+                        images[0].save(os.path.join(self.file_path, f'{os.path.basename(foldername)}.pdf'),  quality=95, resolution=100, save_all=True, append_images=images[1:])
+                    all_images.extend(images)
 
-        if self.merge_all:
-            all_images[0].save(os.path.join(self.file_path,'merge.pdf'),  quality=95, resolution=100, save_all=True, append_images=all_images[1:])
+            if self.merge_all:
+                all_images[0].save(os.path.join(self.file_path,'merge.pdf'),  quality=95, resolution=100, save_all=True, append_images=all_images[1:])
+        except Exception as e:
+            print(f"Error: {e}")
 
 
 if __name__ == '__main__':
