@@ -245,14 +245,14 @@ class App(customtkinter.CTk):
         self.geometry("700x680")
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
-        bg = os.path.join(BASE_DIR, 'resources\image\bg.png')
+        bg = os.path.join(BASE_DIR, r'resources\image\bg.png')
         tips = self.tips(text_path = os.path.join(BASE_DIR, "resources\guide.txt"))
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         # 加载图片
-        image_path = os.path.join(BASE_DIR, 'resources\icon')
+        image_path = os.path.join(BASE_DIR, r'resources\icon')
         self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
                                                  dark_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-dark.png")), size=(26, 26))
         self.Download = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "download.png")),
