@@ -174,7 +174,7 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
 
         self.entry = customtkinter.CTkEntry(self, border_width=0)
         self.entry.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5), sticky="ew")
-        self.entry.insert(0, "download")
+        # self.entry.insert(0, "download")
 
         def select_dir():
             directory = customtkinter.filedialog.askdirectory()
@@ -211,7 +211,7 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
 
         self.entry = customtkinter.CTkEntry(self, border_width=0)
         self.entry.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5), sticky="ew")
-        self.entry.insert(0, "download/merge.pdf")
+        # self.entry.insert(0, "download/merge.pdf")
 
     def segmented_button_callback(self, value):
         value_dict = {"All": 'file', "Single": 'dir'}
@@ -219,12 +219,12 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
 
         if selet == 'file':
             self.entry.delete(0, "end")  # delete all text
-            self.entry.insert(0, "download/merge.pdf")
+            # self.entry.insert(0, "download/merge.pdf")
             self.select_button.configure(command=self.select_file)
 
         if selet == 'dir':
             self.entry.delete(0, "end")  # delete all text
-            self.entry.insert(0, "download")
+            # self.entry.insert(0, "download")
             self.select_button.configure(command=self.select_dir)
 
     def select_file(self):
@@ -261,16 +261,19 @@ class App(customtkinter.CTk):
         self.geometry("700x680")
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
+        # 打包用
+        # bg = r'image\bg.png'
+        # tips = self.tips(r'guide.txt')
+        # image_path = r'icon'
 
         bg = r'resources\image\bg.png'
-        # tips = self.tips(text_path = os.path.join(BASE_DIR, r"resources\guide.txt"))
         tips = self.tips(r'resources\guide.txt')
+        image_path = r'resources\icon'
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         # 加载图片
-        image_path = r'resources\icon'
         self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
                                                  dark_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-dark.png")), size=(26, 26))
         self.Download = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "download.png")),
@@ -390,18 +393,20 @@ class App(customtkinter.CTk):
     def download_images_in_background(self):
         download_path = self.download_path_entry.get().strip()
         url_list = [entry.get() for entry in self.website_entry_frame.entries if entry.get().strip()]
-        try:
-            # Hide the Download button, show the Pause and Stop buttons
-            self.download_button.grid_remove()
-            self.pause_button.grid(row=1, column=1, padx=(5, 0), pady=(5, 10), sticky="nsw")
-            self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+        if download_path and url_list:
+            try:
+                # Hide the Download button, show the Pause and Stop buttons
+                self.download_button.grid_remove()
+                self.pause_button.grid(row=1, column=1, padx=(5, 0), pady=(5, 10), sticky="nsw")
+                self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
 
-            self.text_1.insert("end", '- Running download... -\n')
-            self.crawler.batch_process(url_list, download_path)
-            self.text_1.insert("end", 'Completed all missions!\n')
-        except Exception as e:
-            self.text_1.insert("end", f'Error: {e}\n')
-
+                self.text_1.insert("end", '- Running download... -\n')
+                self.crawler.batch_process(url_list, download_path)
+                self.text_1.insert("end", 'Completed all missions!\n')
+            except Exception as e:
+                self.text_1.insert("end", f'Error: {e}\n')
+        else:
+            self.text_1.insert("end", 'Please enter URL and download path\n\n')
         # Show the Download button, hide the Pause and Stop buttons
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
         self.pause_button.grid_remove()

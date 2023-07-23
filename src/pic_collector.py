@@ -1,4 +1,5 @@
 import os
+import sys
 import json
 import time
 import random
@@ -13,7 +14,7 @@ class BasicCrawler:
     def __init__(self,
                  headers_num: int = 7,
                  retries: int = 5,
-                 sleep_time: float = 1,
+                 sleep_time: float = 0.5,
                  random_time: float = 0.5,
                  **kwargs):
 
@@ -37,8 +38,7 @@ class BasicCrawler:
     def chosen_headers(self):  # 随机选个headers
         # with open('headers_list.json', 'r') as f:
         #     headers_list = json.load(f)
-        headers = {'User-Agent': random.choice([self.ua.random for _ in range(self.headers_num)])}
-        print(headers)
+        headers = {'User-Agent': self.ua.random}
         return headers
     
     def get_lxml(self, url):  # 最多request几次？
@@ -46,10 +46,10 @@ class BasicCrawler:
         while retries > 0:
             if self.stop_requested.is_set():
                 print("Already Over!")
-                exit()
+                sys.exit()
             while self.pause_requested.is_set():
                 # 等待暂停请求被取消
-                time.sleep(0.5)
+                time.sleep(0.1)
             try:
                 headers = self.chosen_headers()
                 res = requests.get(url, headers=headers)
