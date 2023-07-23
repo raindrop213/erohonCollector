@@ -39,16 +39,5 @@ if __name__ == '__main__':
     merger.merge()
 
 
-# def joinimages(images, quality, resolution):
-#     return images[0].save(os.path.join(file_path, f'q{quality} r{resolution}.pdf'),  quality=quality, resolution=resolution, save_all=True, append_images=images[1:])
-
-# all_images[0].save(os.path.join(file_path, 'q95 r-.pdf'), quality=95, save_all=True, append_images=all_images[1:])
-# joinimages(all_images, 95, 100)
-# joinimages(all_images, 95, 200)
-# joinimages(all_images, 95, 300)
-
-
-
-
 
 

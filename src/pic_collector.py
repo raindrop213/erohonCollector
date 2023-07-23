@@ -183,11 +183,16 @@ class BasicCrawler:
 if __name__ == '__main__':
 
     # 测试功能
+    
+    '''
+    ehentai貌似可以随便爬
+    nhentai有时候要验证，不行的话就用浏览器登一下网页，直到能进了就差不多可以了，如果再不行，我也没办法
+    '''
 
     download_path = r'download'
     url_list = [
-        'https://ehentai.to/g/388535',
         'https://ehentai.to/g/397083',
+        'https://nhentai.net/g/435035/',
     ]
 
     manager = BasicCrawler()

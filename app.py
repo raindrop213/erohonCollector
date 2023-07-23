@@ -1,10 +1,11 @@
 import customtkinter
 import threading
-from PIL import Image, ImageTk
+from PIL import Image
 from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
 import os
 
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 
 class WebsiteEntry(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -244,14 +245,14 @@ class App(customtkinter.CTk):
         self.geometry("700x680")
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
-        bg = r'resources\image\bg.png'
-        tips = self.show_markdown(text_path = "resources\guide.txt")
+        bg = os.path.join(BASE_DIR, 'resources\image\bg.png')
+        tips = self.tips(text_path = os.path.join(BASE_DIR, "resources\guide.txt"))
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         # 加载图片
-        image_path = "resources\icon"
+        image_path = os.path.join(BASE_DIR, 'resources\icon')
         self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
                                                  dark_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-dark.png")), size=(26, 26))
         self.Download = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "download.png")),
@@ -487,7 +488,7 @@ class App(customtkinter.CTk):
     def change_appearance_mode_event(self, new_appearance_mode):
         customtkinter.set_appearance_mode(new_appearance_mode)
 
-    def show_markdown(self, text_path):
+    def tips(self, text_path):
         try:
             with open(text_path, "r", encoding="utf-8") as file:
                 text_content = file.read()
