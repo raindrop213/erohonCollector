@@ -1,6 +1,4 @@
-# erohon-collector
-
-## **使用手册**
+# **使用手册**
 
 ### ***- Part A -***
 
@@ -15,11 +13,11 @@
 
 ### ***- Part B -***
 
-1. 在每个PDF文件输入框中：
-    - 文件名：输入你想要合并的PDF文件的完整路径
-    - 删除页码：输入该PDF文件中想删掉的页码，页码之间用空格分开，留空则不删除
+1. 在输入要合成PDF的文件夹路径：：
+    - 文件夹：输入你想要合并成PDF的图片文件夹路径
+    - 删除页码：每个文件夹要删掉的页码，页码之间用空格。留空则不删
 
-    例：PDF文件路径 'E:\download\erohon\sample-1.pdf' 要删除第2页和第9页
+    例：PDF文件路径 'E:\download\sample-1.pdf' 要删除第2页和第9页
     - 文件名：path/to/your/sample-1.pdf
     - 删除页码：2 9
 
@@ -28,7 +26,8 @@
     - All：全部文件夹的图片合成到一个PDF
     - Single：全部文件夹分别合成各自的PDF
 
-### ***- 界面 -***
+
+### **- 界面 -**
 
 ![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/preview.png)
 # ***to be continue...***
