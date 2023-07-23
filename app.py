@@ -5,7 +5,23 @@ from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
 import os
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# import sys
+# def source_path(relative_path):  # 打包用的函数
+#     '''
+#     1. 用pyinstaller打包前所有加载资源路径要删掉'resources\'
+#     如：r'resources\image\bg.png' → r'image\bg.png'
+
+#     2. app.spec中
+#     datas=[('resources','.')],
+#     '''
+#     if getattr(sys, 'frozen', False):
+#         base_path = sys._MEIPASS
+#     else:
+#         base_path = os.path.abspath(".")
+#     return os.path.join(base_path, relative_path)
+# cd = source_path('')
+# os.chdir(cd)
+
 
 class WebsiteEntry(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -245,14 +261,16 @@ class App(customtkinter.CTk):
         self.geometry("700x680")
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
-        bg = os.path.join(BASE_DIR, r'resources\image\bg.png')
-        tips = self.tips(text_path = os.path.join(BASE_DIR, "resources\guide.txt"))
+
+        bg = r'resources\image\bg.png'
+        # tips = self.tips(text_path = os.path.join(BASE_DIR, r"resources\guide.txt"))
+        tips = self.tips(r'resources\guide.txt')
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
 
         # 加载图片
-        image_path = os.path.join(BASE_DIR, r'resources\icon')
+        image_path = r'resources\icon'
         self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
                                                  dark_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-dark.png")), size=(26, 26))
         self.Download = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "download.png")),

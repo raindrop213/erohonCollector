@@ -2,13 +2,13 @@
 
 ### ***- Part A -***
 
-- URL填写要爬取的网站页面
+1. URL填写要爬取的网站页面
 
-- 点击 'Download' 下载
+2. 点击 'Download' 下载
     
-- 点击 'Pause'/'Resume' 暂停/开始
+    'Pause'/'Resume' 暂停/开始
 
-- 点击 'Stop' 终止下载
+    'Stop' 终止下载
 
 
 ### ***- Part B -***
@@ -26,7 +26,8 @@
     - Single：全部文件夹分别合成各自的PDF
 
 ### **- 界面 -**
-
+去release下载exe打开有点久，要等差不多5秒，正在寻找解决办法  
+目前windows10没什么问题，有问题请提issue
 ![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/preview.png)
 
 ## 你问我具体爬的是什么网站？
