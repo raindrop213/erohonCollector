@@ -3,8 +3,6 @@ import threading
 from PIL import Image, ImageTk
 from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
-import sys
-import time
 import os
 
 
@@ -178,19 +176,21 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
 class DirectoryPathEntry(customtkinter.CTkFrame):
     def __init__(self, master, label_text, **kwargs):
         super().__init__(master, **kwargs)
-        self.grid_columnconfigure(1, weight=1)
+        self.grid_columnconfigure((0,1), weight=1)
+
+
+        # 切换选择文件或文件夹的按钮
+        self.segmented_button = customtkinter.CTkSegmentedButton(self, values=["All", "Single"], command=self.segmented_button_callback)
+        self.segmented_button.grid(row=0, column=1, columnspan=2, padx=5, pady=5, sticky="ew")
+        self.segmented_button.set("All")
 
         # 用于选择文件或文件夹的按钮
         self.select_button = customtkinter.CTkButton(self, text="...", width=25)
         self.select_button.grid(row=1, column=2, padx=(0, 5), pady=(0,5), sticky="ew")
-
-        # 切换选择文件或文件夹的按钮
-        self.segmented_button = customtkinter.CTkSegmentedButton(self, values=["All", "Single"], command=self.segmented_button_callback)
-        self.segmented_button.grid(row=0, column=1, columnspan=2, padx=(0, 5), pady=5, sticky="ew")
-        self.segmented_button.set("All")
+        self.select_button.configure(command=self.select_file)
 
         self.label = customtkinter.CTkLabel(self, text=label_text)
-        self.label.grid(row=0, column=0, padx=5, pady=(5, 0), sticky="e")
+        self.label.grid(row=0, column=0, padx=(5,0), pady=5, sticky="w")
 
         self.entry = customtkinter.CTkEntry(self, border_width=0)
         self.entry.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5), sticky="ew")
@@ -226,20 +226,12 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
     def set(self, value):
         self.entry.delete(0, "end")
         self.entry.insert(0, value)
-
-
-class TextRedirector(object):
-    def __init__(self, widget, original_out):
-        self.widget = widget
-        self.original_out = original_out
-
-    def write(self, str):
-        self.widget.insert("end", str)
-        self.widget.see("end")
-        self.original_out.write(str)
-
-    def flush(self):
-        self.original_out.flush()
+    
+    def get_segmented_button(self):
+        if self.segmented_button.get() == 'All':
+            return True
+        if self.segmented_button.get() == 'Single':
+            return False
 
 
 class App(customtkinter.CTk):
@@ -248,109 +240,154 @@ class App(customtkinter.CTk):
 
         self.stop_event = threading.Event()
         
-        customtkinter.set_default_color_theme("blue")  # blue dark-blue green
-        customtkinter.set_appearance_mode("light")  # dark light system
-
         self.title("Erohon Collector")
-        self.geometry("870x870")
+        self.geometry("700x680")
+        customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
-        self.grid_columnconfigure(2, weight=1)
-        self.grid_rowconfigure((0, 2, 4), weight=1)
+        bg = r'resources\image\bg.png'
+        tips = self.show_markdown(text_path = "resources\guide.txt")
 
+        self.grid_rowconfigure(0, weight=1)
+        self.grid_columnconfigure(1, weight=1)
+
+        # 加载图片
+        image_path = "resources\icon"
+        self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
+                                                 dark_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-dark.png")), size=(26, 26))
+        self.Download = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "download.png")),
+                                                 dark_image=Image.open(os.path.join(image_path, "download-dark.png")), size=(20, 20))
+        self.Merge = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "book-open.png")),
+                                                 dark_image=Image.open(os.path.join(image_path, "book-open-dark.png")), size=(20, 20))
+        self.Guide = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "help-circle.png")),
+                                                     dark_image=Image.open(os.path.join(image_path, "help-circle-dark.png")), size=(20, 20))
+
+
+        # 创建导航框
+        self.navigation_frame = customtkinter.CTkFrame(self, corner_radius=0)
+        self.navigation_frame.grid(row=0, column=0, sticky="nsew")
+        self.navigation_frame.grid_rowconfigure(4, weight=1)
+        self.navigation_frame_label = customtkinter.CTkButton(self.navigation_frame, text=" RAINDROP213", image=self.github, 
+                                                              height=80, corner_radius=0,fg_color="transparent", text_color="gray50",
+                                                              command=self.open_url, compound="left", font=customtkinter.CTkFont(size=15, weight="bold"))
+        self.navigation_frame_label.grid(row=0, column=0, sticky='nsew')
+
+        self.frame_1_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text=" Download",
+                                                   fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                                   image=self.Download, anchor="w", command=self.frame_1_button_event)
+        self.frame_1_button.grid(row=1, column=0, sticky="ew")
+
+        self.frame_2_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text=" Merge",
+                                                      fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                                      image=self.Merge, anchor="w", command=self.frame_2_button_event)
+        self.frame_2_button.grid(row=2, column=0, sticky="ew")
+
+        self.frame_3_button = customtkinter.CTkButton(self.navigation_frame, corner_radius=0, height=40, border_spacing=10, text=" Guide",
+                                                      fg_color="transparent", text_color=("gray10", "gray90"), hover_color=("gray70", "gray30"),
+                                                      image=self.Guide, anchor="w", command=self.frame_3_button_event)
+        self.frame_3_button.grid(row=3, column=0, sticky="ew")
+
+        self.appearance_mode_menu = customtkinter.CTkOptionMenu(self.navigation_frame, values=["System", "Light", "Dark"],
+                                                                command=self.change_appearance_mode_event)
+        self.appearance_mode_menu.grid(row=6, column=0, padx=20, pady=20, sticky="s")
+        self.appearance_mode_menu.set("Light")
+
+
+        # 创建框1
+        self.first_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.first_frame.grid_columnconfigure(0, weight=1)
+        self.first_frame.grid_rowconfigure(0, weight=1)
+
+        # Download Images
+        self.website_entry_frame = BlockWebsiteEntry(self.first_frame, title="Download Images")
+        self.website_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         
-        # 添加半透明的背景图像
-        image = Image.open(bg)  # 使用你的背景图像文件名替换"background.jpg"
+        self.download_path_entry = DirectoryWebsiteEntry(self.first_frame, label_text="Download Path")
+        self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
+        
+        self.crawler = BasicCrawler()
+        self.download_button = customtkinter.CTkButton(self.first_frame, text="Download", command=self.download_images)
+        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+
+        # 暂停\结束 按钮
+        self.pause_button = customtkinter.CTkButton(self.first_frame, text="Pause",width=85, fg_color='#af2726', command=self.pause_download)
+        self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", width=50, fg_color='#af2726', command=self.stop_download)
+
+        # logs
+        self.text_1 = customtkinter.CTkTextbox(self.first_frame)
+        self.text_1.grid(row=4, column=0, padx=(10, 5), pady=(10, 5), sticky="nsew", columnspan=2)
+        self.text_1.insert("0.0", "Logs\n\n\n")
+
+        self.button_1 = customtkinter.CTkButton(self.first_frame, text="clear message", command=self.button_clear_callback_1)
+        self.button_1.grid(row=5, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
+
+
+        # 创建框2
+        self.second_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.second_frame.grid_columnconfigure(0, weight=1)
+        self.second_frame.grid_rowconfigure(0, weight=1)
+
+        # Merge PDFs
+        self.path_entry_frame = BlockPathEntry(self.second_frame, title="Merge PDFs")
+        self.path_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
+
+        self.output_path_entry = DirectoryPathEntry(self.second_frame, label_text="Output File")
+        self.output_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
+
+        self.merge_button = customtkinter.CTkButton(self.second_frame, text="Merge", command=self.merge_pdf)
+        self.merge_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+
+        # logs
+        self.text_2 = customtkinter.CTkTextbox(self.second_frame)
+        self.text_2.grid(row=4, column=0, padx=(10, 5), pady=(10, 5), sticky="nsew", columnspan=2)
+        self.text_2.insert("0.0", "Logs\n\n\n\n")
+
+        self.button_2 = customtkinter.CTkButton(self.second_frame, text="clear message", command=self.button_clear_callback_2)
+        self.button_2.grid(row=5, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
+
+
+        # 创建框3
+        self.third_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
+        self.third_frame.grid_rowconfigure(0, weight=1)
+        self.third_frame.grid_columnconfigure(0, weight=1)
+
+        # 添加背景图像
+        image = Image.open(bg)
         image = image.convert("RGBA")
         image_light = Image.blend(Image.new("RGBA", image.size), image, alpha=0.7)
         image_dark = Image.blend(Image.new("RGBA", image.size), image, alpha=0.5)
         self.background_image = customtkinter.CTkImage(light_image=image_light, dark_image=image_dark, size=image.size)
 
-        self.background_label = customtkinter.CTkLabel(self, text=tips, image=self.background_image)
-        self.background_label.grid(row=0, column=2, padx=10, pady=(10, 5), sticky="nsew", rowspan=5)
-        
+        self.background_label = customtkinter.CTkLabel(self.third_frame, text=tips, image=self.background_image)
+        self.background_label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-        # Download Images
-        self.website_entry_frame = BlockWebsiteEntry(self, title="Download Images")
-        self.website_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
-        
-        self.download_path_entry = DirectoryWebsiteEntry(self, label_text="Download Path")
-        self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
-        
-        self.crawler = BasicCrawler()
-        self.download_button = customtkinter.CTkButton(self, text="Download", command=self.download_images)
-        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-
-
-        # Merge PDFs
-        self.path_entry_frame = BlockPathEntry(self, title="Merge PDFs")
-        self.path_entry_frame.grid(row=2, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
-
-        self.output_path_entry = DirectoryPathEntry(self, label_text="Output File")
-        self.output_path_entry.grid(row=3, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
-
-        self.merge_button = customtkinter.CTkButton(self, text="Merge", command=self.merge_pdf)
-        self.merge_button.grid(row=3, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-
-        # logs
-        self.text_1 = customtkinter.CTkTextbox(self)
-        self.text_1.grid(row=4, column=0, padx=(10, 5), pady=(10, 5), sticky="nsew", columnspan=2)
-        self.text_1.insert("0.0", "Logs\n\n\n\n")
-
-        self.button = customtkinter.CTkButton(self, text="test message", command=self.button_callback)
-        self.button.grid(row=5, column=0, padx=(10, 5), pady=(5, 10), sticky="w")
-
-        self.button = customtkinter.CTkButton(self, text="clear message", command=self.button_clear_callback)
-        self.button.grid(row=5, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
-
-        
-        # 暂停\结束 按钮
-        self.pause_button = customtkinter.CTkButton(self, text="Pause",width=85, fg_color='#af2726', command=self.pause_download)
-        self.stop_button = customtkinter.CTkButton(self, text="Stop", width=50, fg_color='#af2726', command=self.stop_download)
-
-        # 重定向 stdout 和 stderr
-        sys.stdout = TextRedirector(self.text_1, sys.stdout)
-        sys.stderr = TextRedirector(self.text_1, sys.stderr)
+                
+        # 默认选框1
+        self.select_frame_by_name("frame_1")
 
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
 
 
-    def button_callback(self):
-        print('You clicked the button!')
-        # 引发一个错误，以便演示 stderr 的重定向
-        1 / 0
-
-    def button_clear_callback(self):
-        self.text_1.delete("0.0", "end")
-        # 清空logs记录
-
-
     def download_images_in_background(self):
         download_path = self.download_path_entry.get().strip()
         url_list = [entry.get() for entry in self.website_entry_frame.entries if entry.get().strip()]
-        if download_path and url_list:
-
+        try:
             # Hide the Download button, show the Pause and Stop buttons
             self.download_button.grid_remove()
             self.pause_button.grid(row=1, column=1, padx=(5, 0), pady=(5, 10), sticky="nsw")
             self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-            
-            print('- Running download... -')
+
+            self.text_1.insert("end", '- Running download... -\n')
             self.crawler.batch_process(url_list, download_path)
-        else:
-            print("Please set Download path and URL")
+            self.text_1.insert("end", 'Completed all missions!\n')
+        except Exception as e:
+            self.text_1.insert("end", f'Error: {e}\n')
 
         # Show the Download button, hide the Pause and Stop buttons
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
         self.pause_button.grid_remove()
         self.stop_button.grid_remove()
         self.text_1.insert("end", '- Download Images finished-\n\n')
-
-    def download_images(self):
-        self.stop_event.clear()
-        self.current_thread = threading.Thread(target=self.download_images_in_background, daemon=True)
-        self.current_thread.start()
-
 
     def merge_pdf_in_background(self):
         paths = []
@@ -363,20 +400,32 @@ class App(customtkinter.CTk):
                 else:
                     pages = []
                 paths.append({"file_path": filepath, "pages_to_delete": pages})
+        try:
+            merger = PDFMerger(paths, self.output_path_entry.get().strip(), merge_all=self.output_path_entry.get_segmented_button())
+            merger.merge()
+            self.text_2.insert("end", 'Completed all missions!\n')
+        except Exception as e:
+            self.text_2.insert("end", f'Error: {e}\n')
+        self.text_2.insert("end", '- Merge PDFs finished -\n\n')
 
-        output_file = "merged.pdf"
-        output_path = os.path.join(self.output_path_entry.get().strip(), output_file)
-        merger = PDFMerger(paths, output_path, merge_all=True)
-        merger.merge()
-        self.text_1.insert("end", '- Merge PDFs finished -\n\n')
-
-        
+    def download_images(self):
+        self.stop_event.clear()
+        self.current_thread = threading.Thread(target=self.download_images_in_background, daemon=True)
+        self.current_thread.start()
 
     def merge_pdf(self):
         self.stop_event.clear()
         self.current_thread = threading.Thread(target=self.merge_pdf_in_background)
         self.current_thread.start()
 
+
+    def button_clear_callback_1(self):
+        self.text_1.delete("0.0", "end")
+        # 清空logs记录
+    
+    def button_clear_callback_2(self):
+        self.text_2.delete("0.0", "end")
+        # 清空logs记录
 
     def pause_download(self):
         self.crawler.pause_requested.set()
@@ -406,35 +455,52 @@ class App(customtkinter.CTk):
         self.destroy()
 
 
-bg = r'resources\image\bg.png'
-tips = r'''
-┏━━━━━┓
-┃ 使用  指南 ┃
-┗━━━━━┛
+    def select_frame_by_name(self, name):
+        # set button color for selected button
+        self.frame_1_button.configure(fg_color=("gray75", "gray25") if name == "frame_1" else "transparent")
+        self.frame_2_button.configure(fg_color=("gray75", "gray25") if name == "frame_2" else "transparent")
+        self.frame_3_button.configure(fg_color=("gray75", "gray25") if name == "frame_3" else "transparent")
 
-- Part A -
+        # show selected frame
+        if name == "frame_1":
+            self.first_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.first_frame.grid_forget()
+        if name == "frame_2":
+            self.second_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.second_frame.grid_forget()
+        if name == "frame_3":
+            self.third_frame.grid(row=0, column=1, sticky="nsew")
+        else:
+            self.third_frame.grid_forget()
 
-1. URL填写要爬取的网站页面
+    def frame_1_button_event(self):
+        self.select_frame_by_name("frame_1")
 
-2. 点击 'Download' 下载
-   点击 'Pause'/'resume' 暂停/开始
-   点击 'stop' 终止下载
+    def frame_2_button_event(self):
+        self.select_frame_by_name("frame_2")
 
+    def frame_3_button_event(self):
+        self.select_frame_by_name("frame_3")
 
-- Part B -
+    def change_appearance_mode_event(self, new_appearance_mode):
+        customtkinter.set_appearance_mode(new_appearance_mode)
 
-1. 在每个PDF文件输入框中：
-    - 文件名：输入你想要合并的PDF文件的完整路径
-    - 删除页码：输入该PDF文件中想删掉的页码，页码之间用空格分开，留空则不删除
+    def show_markdown(self, text_path):
+        try:
+            with open(text_path, "r", encoding="utf-8") as file:
+                text_content = file.read()
+        except FileNotFoundError:
+            print("文件未找到！")
+        return text_content
 
-    例：PDF文件路径 'E:\download\erohon\sample-1.pdf' 要删除第2页和第9页
-    - 文件名：path/to/your/sample-1.pdf
-    - 删除页码：2 9
+    @staticmethod
+    def open_url():
+        url = "https://github.com/raindrop213/erohon-collector"
+        import webbrowser
+        webbrowser.open(url)
 
-3. 合并PDFs：点击 'Merge' 按钮开始合并文件
-    All：全部文件夹的图片合成到一个PDF
-    Single：全部文件夹分别合成各自的PDF
-'''
 
 app = App()
 app.mainloop()
