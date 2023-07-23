@@ -27,16 +27,18 @@ class BasicCrawler:
         self.stop_requested = threading.Event()  # 用于停止线程的标志位
         self.pause_requested = threading.Event()  # 用于暂停线程的标志位
 
-    def generate_headers(self):  # 生成一组headers，偶尔换一换吧
-        self.headers_list = [self.ua.random for _ in range(self.headers_num)]
-        with open('headers_list.json', 'w') as f:
-            json.dump(self.headers_list, f)
-        print('Generate headers_list.json')
+    # 本来想把生成的请求头储存到本地的，但打包不方便，还是算了
+    # def generate_headers(self):  # 生成一组headers，偶尔换一换吧
+        # self.headers_list = [self.ua.random for _ in range(self.headers_num)]
+        # with open('headers_list.json', 'w') as f:
+        #     json.dump(self.headers_list, f)
+        # print('Generate headers_list.json')
 
     def chosen_headers(self):  # 随机选个headers
-        with open('headers_list.json', 'r') as f:
-            headers_list = json.load(f)
-        headers = {'User-Agent': random.choice(headers_list)}
+        # with open('headers_list.json', 'r') as f:
+        #     headers_list = json.load(f)
+        headers = {'User-Agent': random.choice([self.ua.random for _ in range(self.headers_num)])}
+        print(headers)
         return headers
     
     def get_lxml(self, url):  # 最多request几次？
