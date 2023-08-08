@@ -8,10 +8,10 @@
 URL填写要爬取的网站页面
 
 <2>
-点击 'Download' 下载
-点击 'Pause'/'resume' 暂停/开始
-点击 'stop' 终止下载
-
+点击 'Download' 下载；'stop' 终止
+访问频率可调，0.3还挺稳定的
+**User-Agent随机选取一行作请求头（不懂勿改）**
+浏览器打开 https://httpbin.org/user-agent 获取你的User-Agent
 
 - Part B -
 

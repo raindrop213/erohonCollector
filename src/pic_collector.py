@@ -1,13 +1,12 @@
 import os
 import sys
-import json
 import time
 import random
 import requests
-import threading
+# import threading
 from bs4 import BeautifulSoup
-from urllib.parse import urljoin
 from fake_useragent import UserAgent
+from urllib.parse import urljoin
 
 
 class BasicCrawler:
@@ -16,40 +15,29 @@ class BasicCrawler:
                  retries: int = 5,
                  sleep_time: float = 0.5,
                  random_time: float = 0.5,
+                 headers_string: str = UserAgent().random,
                  **kwargs):
 
         self.headers_list = []
         self.headers_num = headers_num
         self.retries = retries
-        self.ua = UserAgent()
         self.sleep_time = sleep_time
         self.random_time = random_time
+        self.headers_string = headers_string
+        
+        self.stop_requested = False  # 用于停止线程的标志位
 
-        self.stop_requested = threading.Event()  # 用于停止线程的标志位
-        self.pause_requested = threading.Event()  # 用于暂停线程的标志位
-
-    # 本来想把生成的请求头储存到本地的，但打包不方便，还是算了
-    # def generate_headers(self):  # 生成一组headers，偶尔换一换吧
-        # self.headers_list = [self.ua.random for _ in range(self.headers_num)]
-        # with open('headers_list.json', 'w') as f:
-        #     json.dump(self.headers_list, f)
-        # print('Generate headers_list.json')
-
-    def chosen_headers(self):  # 随机选个headers
-        # with open('headers_list.json', 'r') as f:
-        #     headers_list = json.load(f)
-        headers = {'User-Agent': self.ua.random}
+    def chosen_headers(self):
+        headers = self.headers_string.strip().split('\n')
+        headers = {'User-Agent': random.choice(headers)}
         return headers
-    
+
     def get_lxml(self, url):  # 最多request几次？
         retries = self.retries
         while retries > 0:
-            if self.stop_requested.is_set():
+            if self.stop_requested:
                 print("Already Over!")
                 sys.exit()
-            while self.pause_requested.is_set():
-                # 等待暂停请求被取消
-                time.sleep(0.1)
             try:
                 headers = self.chosen_headers()
                 res = requests.get(url, headers=headers)
@@ -104,16 +92,16 @@ class BasicCrawler:
         2.【图源】的域名
         3. 拼接域名和文件名得到下载链接
         '''
-        print(f"[{url}] - strat")
         res = self.get_lxml(url)
         html = res.text
         soup = BeautifulSoup(html, 'lxml')
 
         # 文件名
-        title_elements = soup.find('h1', class_='title').find_all('span')  
+        title_elements = soup.find('h1', class_='title').find_all('span')
         title = ''.join(span.text for span in title_elements)
         title = self.sanitize_filename(title)
         download = os.path.join(download_path, title)
+        print(f"[{title}] - strat\n{download_path}")
 
         # 获取文件存储的地址路径
         all_list = soup.find(attrs={"class": "container", "id": "thumbnail-container"})
@@ -137,7 +125,7 @@ class BasicCrawler:
                 imgurl = src_l + '/' + src_r
                 self.download(imgurl, download)
 
-        print(f"[{url}] - done\n")
+        print(f"[{title}] - done\n")
 
     def get_ehentai(self, url, download_path):  # 爬 ehentai.to 后端图源
 
@@ -151,7 +139,6 @@ class BasicCrawler:
         思路：
         【预览图】的域名去掉后面的第一个“t”就是【图源】了
         '''
-        print(f"[{url}] - strat")
         res = self.get_lxml(url)
         html = res.text
         soup = BeautifulSoup(html, 'lxml')
@@ -160,6 +147,7 @@ class BasicCrawler:
         title = soup.find('h1').text
         title = self.sanitize_filename(title)
         download = os.path.join(download_path, title)
+        print(f"[{title}] - strat\n{download_path}")
 
         # 获取预览图链接并改成图源链接
         all_list = soup.find(attrs={"class": "container", "id": "thumbnail-container"})
@@ -169,11 +157,61 @@ class BasicCrawler:
             src_2 = src_1.rsplit("t", 1)
             src_3 = "".join(src_2)
             self.download(src_3, download)
-        print(f"[{url}] - done\n")
+        print(f"[{title}] - done\n")
+
+    def get_hanime1(self, url, download_path):  # 爬 hanime1.me 后端图源
+
+        '''
+        https://hanime1.me/comic/71275 【本子主页】
+        https://t.nhentai.net/galleries/2157410/1t.jpg 【预览图】
+
+        https://hanime1.me/comic/71275/1 【点进去】
+        https://i.nhentai.net/galleries/2157410/1.jpg 【图源】
+
+        思路：
+        1.【预览图】文件名获取（去掉t）
+        2.【图源】的域名获取
+        3. 拼接域名和文件名得到下载链接
+        '''
+        res = self.get_lxml(url)
+        html = res.text
+        soup = BeautifulSoup(html, 'lxml')
+        
+        # 文件名
+        title_elements = soup.find('h3', class_='title').find_all('span')
+        title = ''.join(span.text for span in title_elements)
+        title = self.sanitize_filename(title)
+        download = os.path.join(download_path, title)
+        print(f"[{title}] - strat\n{download_path}")
+
+        # 获取文件存储的地址路径
+        all_list = soup.find(attrs={"class": "comics-panel-margin comics-panel-margin-top comics-panel-padding comics-thumbnail-wrapper comic-rows-wrapper"})
+        href = all_list.find_all("a")
+        first_html = href[0]['href']
+        res = self.get_lxml(first_html)
+        html = res.text
+        soup = BeautifulSoup(html, 'lxml')
+        section = soup.find('img', id='current-page-image')
+        src = section['src']
+        src_l = src.rsplit('/', 1)[0]
+
+        # 获取文件名
+        all_img = all_list.find_all('img')
+        for i in all_img:
+                src_1 = i['data-srcset']
+                src_2 = "".join(src_1.rsplit("t", 1))
+                src_r = src_2.rsplit('/', 1)[-1]
+                # 合并成完整地址并下载
+                imgurl = src_l + '/' + src_r
+                self.download(imgurl, download)
+
+        print(f"[{title}] - done\n")
 
     def batch_process(self, url_list, download_path):  # 批量处理多个链接
         for url in url_list:
-            if 'nhentai.net' in url:
+            if 'hanime1.me' in url:
+                self.get_hanime1(url, download_path)
+            elif 'nhentai.net' in url:
                 self.get_nhentai(url, download_path)
             elif 'ehentai.to' in url:
                 self.get_ehentai(url, download_path)
@@ -188,12 +226,14 @@ if __name__ == '__main__':
     
     '''
     ehentai貌似可以随便爬
-    nhentai有时候要验证，不行的话就用浏览器登一下网页，直到能进了就差不多可以了，如果再不行，我也没办法
+    nhentai和hanime1有时候要验证，不行的话就用浏览器登一下网页，当浏览器能进了爬虫也就可以爬了，如果再不行，我也没办法
+    比较推荐hanime1
     '''
 
     download_path = r'download'
     url_list = [
         'https://ehentai.to/g/397083',
+        'https://hanime1.me/comic/75999',
         'https://nhentai.net/g/435035/',
     ]
 
@@ -201,4 +241,3 @@ if __name__ == '__main__':
 
     # manager.generate_headers()
     manager.batch_process(url_list, download_path)
-    

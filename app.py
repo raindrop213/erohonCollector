@@ -1,6 +1,8 @@
 import customtkinter
 import threading
+import sys
 from PIL import Image
+from fake_useragent import UserAgent
 from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
 import os
@@ -139,7 +141,7 @@ class BlockPathEntry(customtkinter.CTkScrollableFrame):
         self.grid_columnconfigure(0, weight=1)
 
         self.entries = []
-        for _ in range(2):
+        for _ in range(3):
             self.add_entry()
 
     def add_entry(self, path_entry=None):
@@ -250,6 +252,16 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
         if self.segmented_button.get() == 'Single':
             return False
 
+class TextRedirector(object):
+    def __init__(self, widget):
+        self.widget = widget
+
+    def write(self, str):
+        self.widget.insert("end", str)
+        self.widget.see("end")
+
+    def flush(self):
+        pass
 
 class App(customtkinter.CTk):
     def __init__(self):
@@ -258,7 +270,7 @@ class App(customtkinter.CTk):
         self.stop_event = threading.Event()
         
         self.title("Erohon Collector")
-        self.geometry("700x680")
+        self.geometry("710x700")
         customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
         # 打包用
@@ -322,31 +334,36 @@ class App(customtkinter.CTk):
         # Download Images
         self.website_entry_frame = BlockWebsiteEntry(self.first_frame, title="Download Images")
         self.website_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
-        
+
         self.download_path_entry = DirectoryWebsiteEntry(self.first_frame, label_text="Download Path")
         self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
         
-        self.crawler = BasicCrawler()
         self.download_button = customtkinter.CTkButton(self.first_frame, text="Download", command=self.download_images)
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+        self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2726', command=self.stop_download)
 
-        # 暂停\结束 按钮
-        self.pause_button = customtkinter.CTkButton(self.first_frame, text="Pause",width=85, fg_color='#af2726', command=self.pause_download)
-        self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", width=50, fg_color='#af2726', command=self.stop_download)
+
+        self.refresh_button = customtkinter.CTkButton(self.first_frame, text="Refresh User-Agent", command=self.refresh_callback)
+        self.refresh_button.grid(row=2, column=0, padx=(10, 5), pady=5, sticky="we")
+        self.combobox_1 = customtkinter.CTkComboBox(self.first_frame, values=["0.3", "0.5", "1.0"])
+        self.combobox_1.grid(row=2, column=1, padx=(5, 10), pady=5, sticky="e")
+
+        self.header = customtkinter.CTkTextbox(self.first_frame, height=120, wrap='none')
+        self.header.grid(row=3, column=0, padx=10, pady=(5, 5), sticky="nsew", columnspan=2)
+
+        self.refresh_callback()  # 初始化请求头
 
         # logs
         self.text_1 = customtkinter.CTkTextbox(self.first_frame)
-        self.text_1.grid(row=4, column=0, padx=(10, 5), pady=(10, 5), sticky="nsew", columnspan=2)
+        self.text_1.grid(row=4, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_1.insert("0.0", "Logs\n\n\n")
-
         self.button_1 = customtkinter.CTkButton(self.first_frame, text="clear message", command=self.button_clear_callback_1)
-        self.button_1.grid(row=5, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
-
+        self.button_1.grid(row=5, column=1, padx=10, pady=(5, 10), sticky="we")
 
         # 创建框2
         self.second_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.second_frame.grid_columnconfigure(0, weight=1)
-        self.second_frame.grid_rowconfigure(0, weight=1)
+        self.second_frame.grid_rowconfigure((0,2), weight=1)
 
         # Merge PDFs
         self.path_entry_frame = BlockPathEntry(self.second_frame, title="Merge PDFs")
@@ -360,11 +377,10 @@ class App(customtkinter.CTk):
 
         # logs
         self.text_2 = customtkinter.CTkTextbox(self.second_frame)
-        self.text_2.grid(row=4, column=0, padx=(10, 5), pady=(10, 5), sticky="nsew", columnspan=2)
+        self.text_2.grid(row=2, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_2.insert("0.0", "Logs\n\n\n\n")
-
         self.button_2 = customtkinter.CTkButton(self.second_frame, text="clear message", command=self.button_clear_callback_2)
-        self.button_2.grid(row=5, column=1, padx=(5, 10), pady=(5, 10), sticky="e")
+        self.button_2.grid(row=3, column=1, padx=10, pady=(5, 10), sticky="e")
 
 
         # 创建框3
@@ -382,22 +398,27 @@ class App(customtkinter.CTk):
         self.background_label = customtkinter.CTkLabel(self.third_frame, text=tips, image=self.background_image)
         self.background_label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-                
         # 默认选框1
         self.select_frame_by_name("frame_1")
+
+        # 重定向 stdout 和 stderr
+        sys.stdout = TextRedirector(self.text_1)
+        sys.stderr = TextRedirector(self.text_1)
 
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
 
 
     def download_images_in_background(self):
+        headers = self.header.get("0.0", "end").strip()
+        sleep_time = self.combobox_1.get().strip()
+        self.crawler = BasicCrawler(headers_string=headers, sleep_time=sleep_time)
         download_path = self.download_path_entry.get().strip()
         url_list = [entry.get() for entry in self.website_entry_frame.entries if entry.get().strip()]
         if download_path and url_list:
             try:
                 # Hide the Download button, show the Pause and Stop buttons
                 self.download_button.grid_remove()
-                self.pause_button.grid(row=1, column=1, padx=(5, 0), pady=(5, 10), sticky="nsw")
                 self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
 
                 self.text_1.insert("end", '- Running download... -\n')
@@ -409,9 +430,8 @@ class App(customtkinter.CTk):
             self.text_1.insert("end", 'Please enter URL and download path\n\n')
         # Show the Download button, hide the Pause and Stop buttons
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-        self.pause_button.grid_remove()
         self.stop_button.grid_remove()
-        self.text_1.insert("end", '- Download Images finished-\n\n')
+        self.text_1.insert("end", '*** Download Images finished ***\n\n')
 
     def merge_pdf_in_background(self):
         paths = []
@@ -430,18 +450,24 @@ class App(customtkinter.CTk):
             self.text_2.insert("end", 'Completed all missions!\n')
         except Exception as e:
             self.text_2.insert("end", f'Error: {e}\n')
-        self.text_2.insert("end", '- Merge PDFs finished -\n\n')
+        self.text_2.insert("end", '*** Merge PDFs finished ***\n\n')
 
     def download_images(self):
         self.stop_event.clear()
-        self.current_thread = threading.Thread(target=self.download_images_in_background, daemon=True)
-        self.current_thread.start()
+        self.download_thread = threading.Thread(target=self.download_images_in_background, daemon=True)
+        self.download_thread.start()
 
     def merge_pdf(self):
         self.stop_event.clear()
-        self.current_thread = threading.Thread(target=self.merge_pdf_in_background)
-        self.current_thread.start()
+        self.merge_thread = threading.Thread(target=self.merge_pdf_in_background)
+        self.merge_thread.start()
 
+
+    def refresh_callback(self):
+        self.header.delete("0.0", "end")
+        for _ in range(5):
+            ua = {'User-Agent': UserAgent().random}
+            self.header.insert("0.0", str(ua) + '\n')
 
     def button_clear_callback_1(self):
         self.text_1.delete("0.0", "end")
@@ -451,31 +477,19 @@ class App(customtkinter.CTk):
         self.text_2.delete("0.0", "end")
         # 清空logs记录
 
-    def pause_download(self):
-        self.crawler.pause_requested.set()
-        self.text_1.insert("end", '\n- Pause download -\n\n')
-        # Change the text and the command of the Pause button to Resume
-        self.pause_button.configure(text="Resume", fg_color='#34a046', command=self.resume_download)
-
-    def resume_download(self):
-        self.crawler.pause_requested.clear()
-        self.text_1.insert("end", '\n- Resume download -\n\n')
-        # Change the text and the command of the Resume button back to Pause
-        self.pause_button.configure(text="Pause", fg_color='#af2726', command=self.pause_download)
-
     def stop_download(self):
-        self.crawler.stop_requested.set()
+        self.crawler.stop_requested = True
         self.download_button.configure(text="Download")
-        self.text_1.insert("end", '\n- Stop download -\n\n')
-        # Hide the Pause and Stop buttons, show the Download button
-        self.pause_button.grid_remove()
+        self.text_1.insert("end", '\n*** Stop download ***\n\n')
+        # Hide Stop buttons, show the Download button
         self.stop_button.grid_remove()
         self.download_button.grid()
 
     def close_event(self):
-        self.stop_download()
-        if hasattr(self, 'current_thread'):
-            self.current_thread.join(timeout=1)
+        if hasattr(self, 'download_thread'):
+            self.download_thread.join(timeout=1)
+        elif hasattr(self, 'merge_thread'):
+            self.merge_thread.join(timeout=1)
         self.destroy()
 
 
