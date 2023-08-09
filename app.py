@@ -266,24 +266,27 @@ class TextRedirector(object):
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
-
         self.stop_event = threading.Event()
-        
-        self.title("Erohon Collector")
-        self.geometry("710x700")
-        customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
         # 打包用
         # bg = r'image\bg.png'
         # tips = self.tips(r'guide.txt')
         # image_path = r'icon'
-
         bg = r'resources\image\bg.png'
         tips = self.tips(r'resources\guide.txt')
         image_path = r'resources\icon'
+        theme_path = r"resources\purple_theme.json"
+
+        self.title("Erohon Collector")
+        self.geometry("710x700")
+        if os.path.exists(theme_path):
+            customtkinter.set_default_color_theme(theme_path)  # custom theme
+        else:
+            customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
+
 
         # 加载图片
         self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
@@ -301,7 +304,7 @@ class App(customtkinter.CTk):
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
         self.navigation_frame.grid_rowconfigure(4, weight=1)
         self.navigation_frame_label = customtkinter.CTkButton(self.navigation_frame, text=" RAINDROP213", image=self.github, 
-                                                              height=80, corner_radius=0,fg_color="transparent", text_color="gray50",
+                                                              height=80, corner_radius=0,fg_color="transparent", text_color=("gray10", "gray90"),
                                                               command=self.open_url, compound="left", font=customtkinter.CTkFont(size=15, weight="bold"))
         self.navigation_frame_label.grid(row=0, column=0, sticky='nsew')
 
@@ -336,20 +339,19 @@ class App(customtkinter.CTk):
         self.website_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
 
         self.download_path_entry = DirectoryWebsiteEntry(self.first_frame, label_text="Download Path")
-        self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
+        self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=5, sticky="ew")
         
         self.download_button = customtkinter.CTkButton(self.first_frame, text="Download", command=self.download_images)
-        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-        self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2726', command=self.stop_download)
-
-
-        self.refresh_button = customtkinter.CTkButton(self.first_frame, text="Refresh User-Agent", command=self.refresh_callback)
-        self.refresh_button.grid(row=2, column=0, padx=(10, 5), pady=5, sticky="we")
-        self.combobox_1 = customtkinter.CTkComboBox(self.first_frame, values=["0.3", "0.5", "1.0"])
-        self.combobox_1.grid(row=2, column=1, padx=(5, 10), pady=5, sticky="e")
+        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
+        self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2700', hover_color='#C74D01', command=self.stop_download)
 
         self.header = customtkinter.CTkTextbox(self.first_frame, height=120, wrap='none')
-        self.header.grid(row=3, column=0, padx=10, pady=(5, 5), sticky="nsew", columnspan=2)
+        self.header.grid(row=2, column=0, padx=10, pady=(5, 5), sticky="nsew", columnspan=2)
+
+        self.refresh_button = customtkinter.CTkButton(self.first_frame, text="Refresh User-Agent", command=self.refresh_callback)
+        self.refresh_button.grid(row=3, column=0, padx=(10, 5), pady=5, sticky="we")
+        self.combobox_1 = customtkinter.CTkComboBox(self.first_frame, values=["0.3", "0.5", "1.0"])
+        self.combobox_1.grid(row=3, column=1, padx=(5, 10), pady=5, sticky="we")
 
         self.refresh_callback()  # 初始化请求头
 
@@ -391,11 +393,11 @@ class App(customtkinter.CTk):
         # 添加背景图像
         image = Image.open(bg)
         image = image.convert("RGBA")
-        image_light = Image.blend(Image.new("RGBA", image.size), image, alpha=0.7)
+        image_light = Image.blend(Image.new("RGBA", image.size), image, alpha=0.78)
         image_dark = Image.blend(Image.new("RGBA", image.size), image, alpha=0.5)
         self.background_image = customtkinter.CTkImage(light_image=image_light, dark_image=image_dark, size=image.size)
 
-        self.background_label = customtkinter.CTkLabel(self.third_frame, text=tips, image=self.background_image)
+        self.background_label = customtkinter.CTkLabel(self.third_frame, text=tips, image=self.background_image, text_color=("gray0", "#DCE4EE"))
         self.background_label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
         # 默认选框1
@@ -403,7 +405,6 @@ class App(customtkinter.CTk):
 
         # 重定向 stdout 和 stderr
         sys.stdout = TextRedirector(self.text_1)
-        sys.stderr = TextRedirector(self.text_1)
 
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
@@ -419,8 +420,7 @@ class App(customtkinter.CTk):
             try:
                 # Hide the Download button, show the Pause and Stop buttons
                 self.download_button.grid_remove()
-                self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
-
+                self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
                 self.text_1.insert("end", '- Running download... -\n')
                 self.crawler.batch_process(url_list, download_path)
                 self.text_1.insert("end", 'Completed all missions!\n')
@@ -429,7 +429,7 @@ class App(customtkinter.CTk):
         else:
             self.text_1.insert("end", 'Please enter URL and download path\n\n')
         # Show the Download button, hide the Pause and Stop buttons
-        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button.grid_remove()
         self.text_1.insert("end", '*** Download Images finished ***\n\n')
 
@@ -483,7 +483,7 @@ class App(customtkinter.CTk):
         self.text_1.insert("end", '\n*** Stop download ***\n\n')
         # Hide Stop buttons, show the Download button
         self.stop_button.grid_remove()
-        self.download_button.grid()
+        self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
 
     def close_event(self):
         if hasattr(self, 'download_thread'):

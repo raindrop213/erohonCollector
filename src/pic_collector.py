@@ -1,9 +1,7 @@
 import os
-import sys
 import time
 import random
 import requests
-# import threading
 from bs4 import BeautifulSoup
 from fake_useragent import UserAgent
 from urllib.parse import urljoin
@@ -33,40 +31,42 @@ class BasicCrawler:
         return headers
 
     def get_lxml(self, url):  # 最多request几次？
+        """发送GET请求到给定的URL，并返回响应。
+    
+        :param url: 请求的URL。
+        :return: 成功时返回响应对象，失败时返回None。
+        """
         retries = self.retries
         while retries > 0:
             if self.stop_requested:
                 print("Already Over!")
-                sys.exit()
+                raise Exception("Stop requested")
             try:
                 headers = self.chosen_headers()
                 res = requests.get(url, headers=headers)
+                print('******************************')
                 time.sleep(self.sleep_time + random.uniform(0, self.random_time))
-                break
+                return res
             except Exception as e:
-                print(f"{url} Error: {e}")
+                print(f"Request Error: {e}")
                 retries -= 1
-                continue
-        if retries == 0:
-            print(f"Failed to request {url}, giving up.")
-        return res
+
+        print(f"Failed to request {url}, giving up.")
+        return None
 
     def download(self, src, filepath):  # 下载对应文件
 
-        try:
-            filename = src.split("/")[-1]
-            fullpath = os.path.join(filepath, filename)
-            if not os.path.exists(filepath):
-                os.makedirs(filepath)
-            if not os.path.exists(fullpath) or os.path.getsize(fullpath)<1:
-                with open(fullpath, "wb") as f:
-                    res = self.get_lxml(src)
-                    f.write(res.content)
-                    print(f"{filename} has been downloaded")
-            else:
-                print(f"{filename} exists")
-        except Exception as e:
-            print(f"Failed to download image {filename}. Error: {e}")
+        filename = src.split("/")[-1]
+        fullpath = os.path.join(filepath, filename)
+        if not os.path.exists(filepath):
+            os.makedirs(filepath)
+        if not os.path.exists(fullpath) or os.path.getsize(fullpath)<1:
+            with open(fullpath, "wb") as f:
+                res = self.get_lxml(src)
+                f.write(res.content)
+                print(f"{filename} has been downloaded")
+        else:
+            print(f"{filename} exists")
 
     def sanitize_filename(self, filename):  # 文件命名非法字符用空格替换掉
         invalid_chars = '\\/:*?"<>|'
@@ -178,7 +178,7 @@ class BasicCrawler:
         soup = BeautifulSoup(html, 'lxml')
         
         # 文件名
-        title_elements = soup.find('h3', class_='title').find_all('span')
+        title_elements = soup.find('h3', class_='title comics-metadata-top-row').find_all('span')
         title = ''.join(span.text for span in title_elements)
         title = self.sanitize_filename(title)
         download = os.path.join(download_path, title)
@@ -209,11 +209,11 @@ class BasicCrawler:
 
     def batch_process(self, url_list, download_path):  # 批量处理多个链接
         for url in url_list:
-            if 'hanime1.me' in url:
+            if 'hanime1' in url:
                 self.get_hanime1(url, download_path)
-            elif 'nhentai.net' in url:
+            elif 'nhentai' in url:
                 self.get_nhentai(url, download_path)
-            elif 'ehentai.to' in url:
+            elif 'ehentai' in url:
                 self.get_ehentai(url, download_path)
             else:
                 print('Link Error!?')
@@ -232,6 +232,7 @@ if __name__ == '__main__':
 
     download_path = r'download'
     url_list = [
+        'https://hanime1.com/comic/94276',
         'https://ehentai.to/g/397083',
         'https://hanime1.me/comic/75999',
         'https://nhentai.net/g/435035/',
