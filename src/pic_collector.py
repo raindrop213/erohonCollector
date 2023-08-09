@@ -39,20 +39,20 @@ class BasicCrawler:
         retries = self.retries
         while retries > 0:
             if self.stop_requested:
-                print("Already Over!")
-                raise Exception("Stop requested")
+                raise Exception("Already Over!")
             try:
                 headers = self.chosen_headers()
-                res = requests.get(url, headers=headers)
-                print('******************************')
                 time.sleep(self.sleep_time + random.uniform(0, self.random_time))
+                res = requests.get(url, headers=headers)
+                if res.status_code != 200:
+                    raise Exception(f"Failed to request {url}, status code: {res.status_code}")
                 return res
             except Exception as e:
-                print(f"Request Error: {e}")
+                print(e)
                 retries -= 1
 
-        print(f"Failed to request {url}, giving up.")
-        return None
+        raise Exception(f"Failed to request {url}, giving up.")
+    
 
     def download(self, src, filepath):  # 下载对应文件
 
@@ -117,15 +117,18 @@ class BasicCrawler:
 
         # 获取文件名
         all_img = all_list.find_all('img', class_='lazyload')
-        for i in all_img:
-                src_1 = i['data-src']
-                src_2 = "".join(src_1.rsplit("t", 1))
-                src_r = src_2.rsplit('/', 1)[-1]
-                # 合并成完整地址并下载
-                imgurl = src_l + '/' + src_r
-                self.download(imgurl, download)
-
+        progress = 0
+        for i, img in enumerate(all_img):
+            src_1 = i['data-src']
+            src_2 = "".join(src_1.rsplit("t", 1))
+            src_r = src_2.rsplit('/', 1)[-1]
+            # 合并成完整地址并下载
+            imgurl = src_l + '/' + src_r
+            self.download(imgurl, download)
+            progress = (i + 1) / len(all_img)
+            
         print(f"[{title}] - done\n")
+        return progress
 
     def get_ehentai(self, url, download_path):  # 爬 ehentai.to 后端图源
 
@@ -152,12 +155,16 @@ class BasicCrawler:
         # 获取预览图链接并改成图源链接
         all_list = soup.find(attrs={"class": "container", "id": "thumbnail-container"})
         all_img = all_list.find_all("img")
-        for i in all_img:
-            src_1 = i['data-src']
+        progress = 0
+        for i, img in enumerate(all_img):
+            src_1 = img['data-src']
             src_2 = src_1.rsplit("t", 1)
             src_3 = "".join(src_2)
             self.download(src_3, download)
+            progress = (i + 1) / len(all_img)
+
         print(f"[{title}] - done\n")
+        return progress
 
     def get_hanime1(self, url, download_path):  # 爬 hanime1.me 后端图源
 
@@ -197,27 +204,29 @@ class BasicCrawler:
 
         # 获取文件名
         all_img = all_list.find_all('img')
-        for i in all_img:
-                src_1 = i['data-srcset']
-                src_2 = "".join(src_1.rsplit("t", 1))
-                src_r = src_2.rsplit('/', 1)[-1]
-                # 合并成完整地址并下载
-                imgurl = src_l + '/' + src_r
-                self.download(imgurl, download)
-
+        progress = 0
+        for i, img in enumerate(all_img):
+            src_1 = img['data-srcset']
+            src_2 = "".join(src_1.rsplit("t", 1))
+            src_r = src_2.rsplit('/', 1)[-1]
+            imgurl = src_l + '/' + src_r  # 合并成完整地址并下载
+            self.download(imgurl, download)
+            progress = (i + 1) / len(all_img)
+        
         print(f"[{title}] - done\n")
+        return progress
 
     def batch_process(self, url_list, download_path):  # 批量处理多个链接
         for url in url_list:
             if 'hanime1' in url:
-                self.get_hanime1(url, download_path)
+                progress = self.get_hanime1(url, download_path)
             elif 'nhentai' in url:
-                self.get_nhentai(url, download_path)
+                progress = self.get_nhentai(url, download_path)
             elif 'ehentai' in url:
-                self.get_ehentai(url, download_path)
+                progress = self.get_ehentai(url, download_path)
             else:
                 print('Link Error!?')
-        print('Completed all missions!')
+        print('Completed all missions!',progress)
 
 
 if __name__ == '__main__':
@@ -232,9 +241,8 @@ if __name__ == '__main__':
 
     download_path = r'download'
     url_list = [
-        'https://hanime1.com/comic/94276',
-        'https://ehentai.to/g/397083',
-        'https://hanime1.me/comic/75999',
+        # 'https://ehentai.to/g/397083',
+        # 'https://hanime1.me/comic/75999',
         'https://nhentai.net/g/435035/',
     ]
 

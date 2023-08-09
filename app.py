@@ -43,6 +43,9 @@ class WebsiteEntry(customtkinter.CTkFrame):
         self.remove_button = customtkinter.CTkButton(self, text="-", width=25, command=self.remove_entry)
         self.remove_button.grid(row=0, column=3, padx=(0, 5), pady=5)
 
+        self.progressbar = customtkinter.CTkProgressBar(self)
+        self.progressbar.grid(row=1, column=1, padx=5, pady=(0,5), columnspan=3, sticky="ew")
+
     def get(self):
         return self.entry.get()
 
@@ -176,7 +179,7 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
 
         self.entry = customtkinter.CTkEntry(self, border_width=0)
         self.entry.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5), sticky="ew")
-        # self.entry.insert(0, "download")
+        self.entry.insert(0, "E:/mypj/tinytools/erohon-collector/download")
 
         def select_dir():
             directory = customtkinter.filedialog.askdirectory()
@@ -345,18 +348,17 @@ class App(customtkinter.CTk):
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2700', hover_color='#C74D01', command=self.stop_download)
 
-        self.header = customtkinter.CTkTextbox(self.first_frame, height=120, wrap='none')
+        self.header = customtkinter.CTkTextbox(self.first_frame, height=80, wrap='none')
         self.header.grid(row=2, column=0, padx=10, pady=(5, 5), sticky="nsew", columnspan=2)
 
         self.refresh_button = customtkinter.CTkButton(self.first_frame, text="Refresh User-Agent", command=self.refresh_callback)
         self.refresh_button.grid(row=3, column=0, padx=(10, 5), pady=5, sticky="we")
-        self.combobox_1 = customtkinter.CTkComboBox(self.first_frame, values=["0.3", "0.5", "1.0"])
-        self.combobox_1.grid(row=3, column=1, padx=(5, 10), pady=5, sticky="we")
-
+        self.combobox_1 = customtkinter.CTkComboBox(self.first_frame, values=["0.2", "0.5", "1.0"])
+        self.combobox_1.grid(row=3, column=1, padx=(5, 10), pady=5, sticky="we") 
         self.refresh_callback()  # 初始化请求头
 
         # logs
-        self.text_1 = customtkinter.CTkTextbox(self.first_frame)
+        self.text_1 = customtkinter.CTkTextbox(self.first_frame, wrap='none')
         self.text_1.grid(row=4, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_1.insert("0.0", "Logs\n\n\n")
         self.button_1 = customtkinter.CTkButton(self.first_frame, text="clear message", command=self.button_clear_callback_1)
@@ -365,24 +367,30 @@ class App(customtkinter.CTk):
         # 创建框2
         self.second_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.second_frame.grid_columnconfigure(0, weight=1)
-        self.second_frame.grid_rowconfigure((0,2), weight=1)
+        self.second_frame.grid_rowconfigure((0,3), weight=1)
 
         # Merge PDFs
         self.path_entry_frame = BlockPathEntry(self.second_frame, title="Merge PDFs")
         self.path_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
 
         self.output_path_entry = DirectoryPathEntry(self.second_frame, label_text="Output File")
-        self.output_path_entry.grid(row=1, column=0, padx=(10, 5), pady=(5, 10), sticky="ew")
-
+        self.output_path_entry.grid(row=1, column=0, padx=(10, 5), pady=5, sticky="ew")
         self.merge_button = customtkinter.CTkButton(self.second_frame, text="Merge", command=self.merge_pdf)
-        self.merge_button.grid(row=1, column=1, padx=(5, 10), pady=(5, 10), sticky="nse")
+        self.merge_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nse")
+
+
+        self.quality_bar = customtkinter.CTkSlider(self.second_frame, command=self.slider_callback, from_=55, to=95, number_of_steps=4)
+        self.quality_bar.grid(row=2, column=0, padx=(10, 5), pady=(5, 10), sticky="we")
+        self.option_save_image = customtkinter.CTkCheckBox(self.second_frame, text='Pack to folder')
+        self.option_save_image.grid(row=2, column=1, padx=(9, 10), pady=(5, 10), sticky="w")
+
 
         # logs
         self.text_2 = customtkinter.CTkTextbox(self.second_frame)
-        self.text_2.grid(row=2, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
+        self.text_2.grid(row=3, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_2.insert("0.0", "Logs\n\n\n\n")
         self.button_2 = customtkinter.CTkButton(self.second_frame, text="clear message", command=self.button_clear_callback_2)
-        self.button_2.grid(row=3, column=1, padx=10, pady=(5, 10), sticky="e")
+        self.button_2.grid(row=4, column=1, padx=10, pady=(5, 10), sticky="e")
 
 
         # 创建框3
@@ -404,7 +412,7 @@ class App(customtkinter.CTk):
         self.select_frame_by_name("frame_1")
 
         # 重定向 stdout 和 stderr
-        sys.stdout = TextRedirector(self.text_1)
+        # sys.stdout = TextRedirector(self.text_1)
 
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
@@ -412,18 +420,17 @@ class App(customtkinter.CTk):
 
     def download_images_in_background(self):
         headers = self.header.get("0.0", "end").strip()
-        sleep_time = self.combobox_1.get().strip()
+        sleep_time = float(self.combobox_1.get())
         self.crawler = BasicCrawler(headers_string=headers, sleep_time=sleep_time)
         download_path = self.download_path_entry.get().strip()
         url_list = [entry.get() for entry in self.website_entry_frame.entries if entry.get().strip()]
+
         if download_path and url_list:
             try:
                 # Hide the Download button, show the Pause and Stop buttons
                 self.download_button.grid_remove()
                 self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
-                self.text_1.insert("end", '- Running download... -\n')
                 self.crawler.batch_process(url_list, download_path)
-                self.text_1.insert("end", 'Completed all missions!\n')
             except Exception as e:
                 self.text_1.insert("end", f'Error: {e}\n')
         else:
@@ -445,7 +452,11 @@ class App(customtkinter.CTk):
                     pages = []
                 paths.append({"file_path": filepath, "pages_to_delete": pages})
         try:
-            merger = PDFMerger(paths, self.output_path_entry.get().strip(), merge_all=self.output_path_entry.get_segmented_button())
+            merger = PDFMerger(paths, self.output_path_entry.get().strip(),
+                               merge_all=self.output_path_entry.get_segmented_button(),
+                               quality=self.quality,
+                               save_images=self.option_save_image.get(),
+                               )
             merger.merge()
             self.text_2.insert("end", 'Completed all missions!\n')
         except Exception as e:
@@ -462,6 +473,9 @@ class App(customtkinter.CTk):
         self.merge_thread = threading.Thread(target=self.merge_pdf_in_background)
         self.merge_thread.start()
 
+    def slider_callback(self, value):
+        self.quality = int(value)
+        print(self.quality)
 
     def refresh_callback(self):
         self.header.delete("0.0", "end")
