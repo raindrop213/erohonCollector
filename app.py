@@ -8,25 +8,6 @@ from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
 import os
 
-# 打包单个exe程序时用
-# import sys
-# def source_path(relative_path):
-#     '''
-#     1. 用pyinstaller打包前所有加载资源路径要删掉'resources\'
-#     如：r'resources\image\bg.png' → r'image\bg.png'
-
-#     2. app.spec中
-#     datas=[('resources','.')],
-#     '''
-
-#     if getattr(sys, 'frozen', False):
-#         base_path = sys._MEIPASS
-#     else:
-#         base_path = os.path.abspath(".")
-#     return os.path.join(base_path, relative_path)
-# cd = source_path('')
-# os.chdir(cd)
-
 # 下载框
 class WebsiteEntry(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
@@ -290,10 +271,6 @@ class App(customtkinter.CTk):
         self.downloading = False
         self.crawler = None
 
-        # 打包单个exe程序时用
-        # bg = 'image\\bg.png'
-        # image_path = 'icon'
-        # data_path = 'data'
         bg = 'resources\\image\\bg.png'
         image_path = 'resources\\icon'
         data_path = 'resources\\data'
@@ -305,14 +282,15 @@ class App(customtkinter.CTk):
             tips = file.read()  # 加载使用指南
 
         self.history_path = os.path.join(data_path, "history.json")
-        with open(self.history_path), 'r' as file:
+        with open(self.history_path, 'r')  as file:
             self.history = json.load(file)  # 加载历史记录
 
-        theme = os.path.join(data_path, 'gpurple_theme.json')
-        if os.path.exists(theme):  # 自定义主题
-            customtkinter.set_default_color_theme(theme)  # custom theme
+        purple_theme = os.path.join(data_path, 'purple_theme.json')
+        if os.path.exists(purple_theme):  # 自定义主题
+            customtkinter.set_default_color_theme(purple_theme)  # custom theme
         else:
             customtkinter.set_default_color_theme("blue")  # blue dark-blue green
+
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
@@ -374,7 +352,7 @@ class App(customtkinter.CTk):
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2700', hover_color='#C74D01', command=self.stop_download)
 
-        self.header = customtkinter.CTkTextbox(self.first_frame, height=80, undo=True, wrap='none')
+        self.header = customtkinter.CTkTextbox(self.first_frame, height=80, wrap='none')
         self.header.grid(row=2, column=0, padx=10, pady=(5, 5), sticky="nsew", columnspan=2)
 
         self.refresh_button = customtkinter.CTkButton(self.first_frame, text="Refresh User-Agent", command=self.refresh_callback)
@@ -384,7 +362,7 @@ class App(customtkinter.CTk):
         self.refresh_callback()  # 初始化请求头
 
         # 消息框-logs
-        self.text_1 = customtkinter.CTkTextbox(self.first_frame, undo=True, wrap='none')
+        self.text_1 = customtkinter.CTkTextbox(self.first_frame, wrap='none')
         self.text_1.grid(row=4, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_1.insert("0.0", "Logs\n\n\n")
         self.button_1 = customtkinter.CTkButton(self.first_frame, text="clear message", command=self.button_clear_callback_1)
@@ -404,13 +382,13 @@ class App(customtkinter.CTk):
         self.merge_button = customtkinter.CTkButton(self.second_frame, text="Merge", command=self.merge_pdf)
         self.merge_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nse")
 
-        self.quality_bar = customtkinter.CTkSlider(self.second_frame, command=self.slider_callback, from_=55, to=95, number_of_steps=4)
+        self.quality_bar = customtkinter.CTkSlider(self.second_frame, from_=55, to=95, number_of_steps=4)
         self.quality_bar.grid(row=2, column=0, padx=(10, 5), pady=(5, 10), sticky="we")
         self.option_save_image = customtkinter.CTkCheckBox(self.second_frame, text='Pack to folder')
         self.option_save_image.grid(row=2, column=1, padx=(9, 10), pady=(5, 10), sticky="w")
 
         # 消息框-logs
-        self.text_2 = customtkinter.CTkTextbox(self.second_frame, undo=True)
+        self.text_2 = customtkinter.CTkTextbox(self.second_frame, wrap='none')
         self.text_2.grid(row=3, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_2.insert("0.0", "Logs\n\n\n\n")
         self.button_2 = customtkinter.CTkButton(self.second_frame, text="clear message", command=self.button_clear_callback_2)
@@ -434,7 +412,8 @@ class App(customtkinter.CTk):
 
         # GUI基础设置
         self.select_frame_by_name("frame_1")  # 默认在窗口1
-        self.download_path_entry.set(self.history["download_path"])
+        self.download_path_entry.set(self.history["download_path"])  # 默认上一次的下载路径
+        self.quality_bar.set(95)  # 默认合并质量
         sys.stdout = TextRedirector(self.text_1)  # 重定向 stdout / stderr
         self.protocol("WM_DELETE_WINDOW", self.close_event)  # 关闭GUI前结束所有任务
 
@@ -460,9 +439,8 @@ class App(customtkinter.CTk):
 
         if download_path and url_list:
             try:
-                # Hide the Download button, show the Pause and Stop buttons
-                self.download_button.grid_remove()
-                self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
+                self.download_button.grid_remove()  # 隐藏Download按钮
+                self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")  # 显示Stop按钮
                 self.downloading = True  # 设置下载标志
                 self.website_entry_frame.reset_progress()  # 重置进度条
                 self.update_progress_bars()  # 开始周期性检查进度
@@ -473,7 +451,7 @@ class App(customtkinter.CTk):
                 self.downloading = False  # 清除下载标志
                 self.website_entry_frame.reset_progress()  # 重置进度条
         else:
-            self.text_1.insert("end", 'Please enter URL and download path\n\n')
+            self.text_1.insert("end", 'Please enter URL and download path\n')
         # Show the Download button, hide the Pause and Stop buttons
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button.grid_remove()
@@ -493,7 +471,7 @@ class App(customtkinter.CTk):
         try:
             merger = PDFMerger(paths, self.output_path_entry.get().strip(),
                                merge_all=self.output_path_entry.get_segmented_button(),
-                               quality=self.quality,
+                               quality=int(self.quality_bar.get()),
                                save_images=self.option_save_image.get(),
                                )
             merger.merge()
@@ -512,13 +490,10 @@ class App(customtkinter.CTk):
         self.merge_thread = threading.Thread(target=self.merge_pdf_in_background)
         self.merge_thread.start()
 
-    def slider_callback(self, value):
-        self.quality = int(value)
-
     def refresh_callback(self):
         self.header.delete("0.0", "end")
         for _ in range(5):
-            ua = {'User-Agent': UserAgent().random}
+            ua = UserAgent().random
             self.header.insert("0.0", str(ua) + '\n')
 
     def button_clear_callback_1(self):

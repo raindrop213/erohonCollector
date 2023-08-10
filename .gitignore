@@ -1,6 +1,7 @@
 .venv
 venv
-test/
+dist
+test
 __pycache__
 download/*
 *.pdf
