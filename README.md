@@ -31,7 +31,7 @@
 ### **- 界面 -**
 ![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/preview1.jpg)
 
-![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/preview2.jng)
+![tips](https://raw.githubusercontent.com/raindrop213/erohon-collector/main/resources/image/preview2.jpg)
 
 ## 你问我具体爬的是什么网站？
 在项目主页上src/pic_collector源码里找找吧，不方便多说了o(￣ε￣*) 
