@@ -15,28 +15,24 @@ class BasicCrawler:
                  random_time: float = 0.5,
                  headers_string: str = UserAgent().random,
                  **kwargs):
-
-        self.headers_list = []
         self.headers_num = headers_num
         self.retries = retries
         self.sleep_time = sleep_time
         self.random_time = random_time
         self.headers_string = headers_string
         self.progress = {}  # 初始化进度字典
-        
         self.stop_requested = False  # 用于停止线程的标志位
 
-    def get_progress(self):
+    def get_progress(self):  # 获取进度信息
         return self.progress
 
-    def chosen_headers(self):
-        headers = self.headers_string.strip().split('\n')
-        headers = {'User-Agent': random.choice(headers)}
+    def chosen_headers(self):  # 选择随机的User-Agent
+        headers = {'User-Agent': self.headers_string}
         return headers
 
-    def get_lxml(self, url):  # 最多request几次？
+    def get_lxml(self, url):
         """发送GET请求到给定的URL，并返回响应。
-    
+
         :param url: 请求的URL。
         :return: 成功时返回响应对象，失败时返回None。
         """
@@ -54,17 +50,15 @@ class BasicCrawler:
             except Exception as e:
                 print(e)
                 retries -= 1
-
         raise Exception(f"Failed to request {url}, giving up.")
-    
 
-    def download(self, src, filepath):  # 下载对应文件
-
+    def download(self, src, filepath):
+        # 下载对应文件
         filename = src.split("/")[-1]
         fullpath = os.path.join(filepath, filename)
         if not os.path.exists(filepath):
             os.makedirs(filepath)
-        if not os.path.exists(fullpath) or os.path.getsize(fullpath)<1:
+        if not os.path.exists(fullpath) or os.path.getsize(fullpath) < 1:
             with open(fullpath, "wb") as f:
                 res = self.get_lxml(src)
                 f.write(res.content)
@@ -72,10 +66,11 @@ class BasicCrawler:
         else:
             print(f"{filename} exists")
 
-    def sanitize_filename(self, filename):  # 文件命名非法字符用空格替换掉
+    def sanitize_filename(self, filename):
+        # 文件命名非法字符用空格替换掉
         invalid_chars = '\\/:*?"<>|'
         # 创建一个映射表，该表指定所有非法字符都应被空字符替换
-        trans_table = str.maketrans(invalid_chars, ' '*len(invalid_chars))
+        trans_table = str.maketrans(invalid_chars, ' ' * len(invalid_chars))
         # 使用映射表替换非法字符，然后去除额外的空格
         return filename.translate(trans_table).strip()
 
@@ -83,7 +78,6 @@ class BasicCrawler:
     # 以下方法针对具体网站爬取
 
     def get_nhentai(self, url, download_path):  # 爬 nhentai.net 后端图源
-
         '''
         https://nhentai.net/g/435035/ 【本子主页】
         https://t3.nhentai.net/galleries/2422457/1t.jpg 【预览图】
@@ -134,7 +128,6 @@ class BasicCrawler:
         print(f"[{title}] - done\n")
 
     def get_ehentai(self, url, download_path):  # 爬 ehentai.to 后端图源
-
         '''
         https://ehentai.to/g/397083 【本子主页】
         https://cdn.dogehls.xyz/galleries/2176760/1t.jpg 【预览图】
@@ -218,7 +211,7 @@ class BasicCrawler:
         print(f"[{title}] - done\n")
 
     def batch_process(self, url_list, download_path):  # 批量处理多个链接
-        for idx, url in enumerate(url_list):
+        for url in url_list:
             if 'hanime1' in url:
                 self.get_hanime1(url, download_path)
             elif 'nhentai' in url:

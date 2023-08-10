@@ -1,20 +1,16 @@
 import customtkinter
 import threading
 import sys
-# from selenium import webdriver
+import json
 from PIL import Image
 from fake_useragent import UserAgent
 from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
 import os
 
-
-# browser = webdriver.Chrome()
-# browser.get(url)
-# page_source = browser.page_source
-
+# 打包单个exe程序时用
 # import sys
-# def source_path(relative_path):  # 打包用的函数
+# def source_path(relative_path):
 #     '''
 #     1. 用pyinstaller打包前所有加载资源路径要删掉'resources\'
 #     如：r'resources\image\bg.png' → r'image\bg.png'
@@ -22,6 +18,7 @@ import os
 #     2. app.spec中
 #     datas=[('resources','.')],
 #     '''
+
 #     if getattr(sys, 'frozen', False):
 #         base_path = sys._MEIPASS
 #     else:
@@ -30,7 +27,7 @@ import os
 # cd = source_path('')
 # os.chdir(cd)
 
-
+# 下载框
 class WebsiteEntry(customtkinter.CTkFrame):
     def __init__(self, master, **kwargs):
         super().__init__(master, **kwargs)
@@ -51,6 +48,7 @@ class WebsiteEntry(customtkinter.CTkFrame):
 
         self.progressbar = customtkinter.CTkProgressBar(self)
         self.progressbar.grid(row=1, column=1, padx=5, pady=(0,5), columnspan=3, sticky="ew")
+        self.progressbar.set(0)
 
     def get(self):
         return self.entry.get()
@@ -106,7 +104,7 @@ class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
         for entry in self.entries:
             entry.reset_progress()
 
-
+# 合并成PDF或者文件夹
 class PathEntry(customtkinter.CTkFrame):
     def __init__(self, master, command_add=None, command_remove=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -185,6 +183,7 @@ class BlockPathEntry(customtkinter.CTkScrollableFrame):
             entry.grid(row=i, column=0, padx=(0,3), pady=(0,6), sticky="ew")
 
 
+# 下载路径
 class DirectoryWebsiteEntry(customtkinter.CTkFrame):
     def __init__(self, master, label_text, **kwargs):
         super().__init__(master, **kwargs)
@@ -195,7 +194,6 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
 
         self.entry = customtkinter.CTkEntry(self, border_width=0)
         self.entry.grid(row=1, column=0, columnspan=2, padx=5, pady=(0,5), sticky="ew")
-        self.entry.insert(0, "E:/mypj/tinytools/erohon-collector/download")
 
         def select_dir():
             directory = customtkinter.filedialog.askdirectory()
@@ -211,6 +209,7 @@ class DirectoryWebsiteEntry(customtkinter.CTkFrame):
         self.entry.delete(0, "end")
         self.entry.insert(0, value)
 
+# PDF或者文件夹储存路径
 class DirectoryPathEntry(customtkinter.CTkFrame):
     def __init__(self, master, label_text, **kwargs):
         super().__init__(master, **kwargs)
@@ -271,6 +270,7 @@ class DirectoryPathEntry(customtkinter.CTkFrame):
         if self.segmented_button.get() == 'Single':
             return False
 
+# 捕获并且输出消息到消息框
 class TextRedirector(object):
     def __init__(self, widget):
         self.widget = widget
@@ -282,36 +282,43 @@ class TextRedirector(object):
     def flush(self):
         pass
 
+# GUI主程序
 class App(customtkinter.CTk):
     def __init__(self):
         super().__init__()
         self.stop_event = threading.Event()
-
         self.downloading = False
         self.crawler = None
 
-        # 打包用
-        # bg = r'image\bg.png'
-        # tips = self.tips(r'guide.txt')
-        # image_path = r'icon'
-        bg = r'resources\image\bg.png'
-        tips = self.tips(r'resources\guide.txt')
-        image_path = r'resources\icon'
-        theme_path = r"resources\purple_theme.json"
+        # 打包单个exe程序时用
+        # bg = 'image\\bg.png'
+        # image_path = 'icon'
+        # data_path = 'data'
+        bg = 'resources\\image\\bg.png'
+        image_path = 'resources\\icon'
+        data_path = 'resources\\data'
 
         self.title("Erohon Collector")
         self.geometry("710x700")
-        if os.path.exists(theme_path):
-            customtkinter.set_default_color_theme(theme_path)  # custom theme
+
+        with open(os.path.join(data_path, 'guide.txt'), "r", encoding="utf-8") as file:
+            tips = file.read()  # 加载使用指南
+
+        self.history_path = os.path.join(data_path, "history.json")
+        with open(self.history_path), 'r' as file:
+            self.history = json.load(file)  # 加载历史记录
+
+        theme = os.path.join(data_path, 'gpurple_theme.json')
+        if os.path.exists(theme):  # 自定义主题
+            customtkinter.set_default_color_theme(theme)  # custom theme
         else:
             customtkinter.set_default_color_theme("blue")  # blue dark-blue green
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
-        
 
 
-        # 加载图片
+        # 加载icon图片
         self.github = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-light.png")), 
                                                  dark_image=Image.open(os.path.join(image_path, "GitHub-Logo.wine-dark.png")), size=(26, 26))
         self.Download = customtkinter.CTkImage(light_image=Image.open(os.path.join(image_path, "download.png")),
@@ -322,7 +329,7 @@ class App(customtkinter.CTk):
                                                      dark_image=Image.open(os.path.join(image_path, "help-circle-dark.png")), size=(20, 20))
 
 
-        # 创建导航框
+        # 创建导航栏
         self.navigation_frame = customtkinter.CTkFrame(self, corner_radius=0)
         self.navigation_frame.grid(row=0, column=0, sticky="nsew")
         self.navigation_frame.grid_rowconfigure(4, weight=1)
@@ -352,18 +359,17 @@ class App(customtkinter.CTk):
         self.appearance_mode_menu.set("Light")
 
 
-        # 创建框1
+        # 创建窗口1
         self.first_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.first_frame.grid_columnconfigure(0, weight=1)
         self.first_frame.grid_rowconfigure(0, weight=1)
 
-        # Download Images
+        # 下载窗口
         self.website_entry_frame = BlockWebsiteEntry(self.first_frame, title="Download Images")
         self.website_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
 
         self.download_path_entry = DirectoryWebsiteEntry(self.first_frame, label_text="Download Path")
         self.download_path_entry.grid(row=1, column=0, padx=(10, 5), pady=5, sticky="ew")
-        
         self.download_button = customtkinter.CTkButton(self.first_frame, text="Download", command=self.download_images)
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2700', hover_color='#C74D01', command=self.stop_download)
@@ -377,19 +383,19 @@ class App(customtkinter.CTk):
         self.combobox_1.grid(row=3, column=1, padx=(5, 10), pady=5, sticky="we") 
         self.refresh_callback()  # 初始化请求头
 
-        # logs
+        # 消息框-logs
         self.text_1 = customtkinter.CTkTextbox(self.first_frame, undo=True, wrap='none')
         self.text_1.grid(row=4, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_1.insert("0.0", "Logs\n\n\n")
         self.button_1 = customtkinter.CTkButton(self.first_frame, text="clear message", command=self.button_clear_callback_1)
         self.button_1.grid(row=5, column=1, padx=10, pady=(5, 10), sticky="we")
 
-        # 创建框2
+        # 创建窗口2
         self.second_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.second_frame.grid_columnconfigure(0, weight=1)
         self.second_frame.grid_rowconfigure((0,3), weight=1)
 
-        # Merge PDFs
+        # 文件合并处理窗口
         self.path_entry_frame = BlockPathEntry(self.second_frame, title="Merge PDFs")
         self.path_entry_frame.grid(row=0, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
 
@@ -398,14 +404,12 @@ class App(customtkinter.CTk):
         self.merge_button = customtkinter.CTkButton(self.second_frame, text="Merge", command=self.merge_pdf)
         self.merge_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nse")
 
-
         self.quality_bar = customtkinter.CTkSlider(self.second_frame, command=self.slider_callback, from_=55, to=95, number_of_steps=4)
         self.quality_bar.grid(row=2, column=0, padx=(10, 5), pady=(5, 10), sticky="we")
         self.option_save_image = customtkinter.CTkCheckBox(self.second_frame, text='Pack to folder')
         self.option_save_image.grid(row=2, column=1, padx=(9, 10), pady=(5, 10), sticky="w")
 
-
-        # logs
+        # 消息框-logs
         self.text_2 = customtkinter.CTkTextbox(self.second_frame, undo=True)
         self.text_2.grid(row=3, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_2.insert("0.0", "Logs\n\n\n\n")
@@ -413,7 +417,7 @@ class App(customtkinter.CTk):
         self.button_2.grid(row=4, column=1, padx=10, pady=(5, 10), sticky="e")
 
 
-        # 创建框3
+        # 创建窗口3
         self.third_frame = customtkinter.CTkFrame(self, corner_radius=0, fg_color="transparent")
         self.third_frame.grid_rowconfigure(0, weight=1)
         self.third_frame.grid_columnconfigure(0, weight=1)
@@ -428,14 +432,11 @@ class App(customtkinter.CTk):
         self.background_label = customtkinter.CTkLabel(self.third_frame, text=tips, image=self.background_image, text_color=("gray0", "#DCE4EE"))
         self.background_label.grid(row=0, column=0, padx=10, pady=10, sticky="nsew")
 
-        # 默认选框1
-        self.select_frame_by_name("frame_1")
-
-        # 重定向 stdout 和 stderr
-        sys.stdout = TextRedirector(self.text_1)
-
-        # 关闭GUI前结束所有任务
-        self.protocol("WM_DELETE_WINDOW", self.close_event)
+        # GUI基础设置
+        self.select_frame_by_name("frame_1")  # 默认在窗口1
+        self.download_path_entry.set(self.history["download_path"])
+        sys.stdout = TextRedirector(self.text_1)  # 重定向 stdout / stderr
+        self.protocol("WM_DELETE_WINDOW", self.close_event)  # 关闭GUI前结束所有任务
 
     def update_progress_bars(self):
         if not self.crawler:
@@ -538,6 +539,12 @@ class App(customtkinter.CTk):
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
 
     def close_event(self):
+        # 先保存历史记录
+        self.history['download_path'] = self.download_path_entry.get().strip()
+        with open( self.history_path, 'w') as file:
+            json.dump(self.history, file, indent=4)
+
+        # 检查线程是否结束
         if hasattr(self, 'download_thread'):
             self.download_thread.join(timeout=1)
         elif hasattr(self, 'merge_thread'):
@@ -576,14 +583,6 @@ class App(customtkinter.CTk):
 
     def change_appearance_mode_event(self, new_appearance_mode):
         customtkinter.set_appearance_mode(new_appearance_mode)
-
-    def tips(self, text_path):
-        try:
-            with open(text_path, "r", encoding="utf-8") as file:
-                text_content = file.read()
-        except FileNotFoundError:
-            print("文件未找到！")
-        return text_content
 
     @staticmethod
     def open_url():
