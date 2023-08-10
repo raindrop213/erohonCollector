@@ -475,7 +475,6 @@ class App(customtkinter.CTk):
 
     def slider_callback(self, value):
         self.quality = int(value)
-        print(self.quality)
 
     def refresh_callback(self):
         self.header.delete("0.0", "end")
