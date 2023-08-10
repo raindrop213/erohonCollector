@@ -432,7 +432,7 @@ class App(customtkinter.CTk):
         self.select_frame_by_name("frame_1")
 
         # 重定向 stdout 和 stderr
-        # sys.stdout = TextRedirector(self.text_1)
+        sys.stdout = TextRedirector(self.text_1)
 
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
@@ -445,7 +445,6 @@ class App(customtkinter.CTk):
         for entry in self.website_entry_frame.entries:
             url = entry.get()
             progress = progress_dict.get(url, 0)
-            print(progress)
             entry.set_progress(progress)  # 更新进度条
 
         if self.downloading:  # 如果仍在下载中，则继续周期性检查进度

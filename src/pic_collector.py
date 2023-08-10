@@ -104,7 +104,7 @@ class BasicCrawler:
         title_elements = soup.find('h1', class_='title').find_all('span')
         title = ''.join(span.text for span in title_elements)
         title = self.sanitize_filename(title)
-        download = os.path.join(download_path, title)
+        download_full_path = os.path.join(download_path, title)
         print(f"[{title}] - strat\n{download_path}")
 
         # 获取文件存储的地址路径
@@ -127,7 +127,7 @@ class BasicCrawler:
             src_r = src_2.rsplit('/', 1)[-1]
             # 合并成完整地址并下载
             imgurl = src_l + '/' + src_r
-            self.download(imgurl, download)
+            self.download(imgurl, download_full_path)
             self.progress[url] = (i + 1) / len(all_img)  # 更新特定 URL 的进度
             print(self.progress[url], end=' ', flush=True)
             
@@ -152,7 +152,7 @@ class BasicCrawler:
         # 文件名
         title = soup.find('h1').text
         title = self.sanitize_filename(title)
-        download = os.path.join(download_path, title)
+        download_full_path = os.path.join(download_path, title)
         print(f"[{title}] - strat\n{download_path}")
 
         # 获取预览图链接并改成图源链接
@@ -162,7 +162,7 @@ class BasicCrawler:
             src_1 = img['data-src']
             src_2 = src_1.rsplit("t", 1)
             src_3 = "".join(src_2)
-            self.download(src_3, download)
+            self.download(src_3, download_full_path)
             self.progress[url] = (i + 1) / len(all_img)  # 更新特定 URL 的进度
             print(self.progress[url], end=' ', flush=True)
 
@@ -190,7 +190,7 @@ class BasicCrawler:
         title_elements = soup.find('h3', class_='title comics-metadata-top-row').find_all('span')
         title = ''.join(span.text for span in title_elements)
         title = self.sanitize_filename(title)
-        download = os.path.join(download_path, title)
+        download_full_path = os.path.join(download_path, title)
         print(f"[{title}] - strat\n{download_path}")
 
         # 获取文件存储的地址路径
@@ -211,9 +211,9 @@ class BasicCrawler:
             src_2 = "".join(src_1.rsplit("t", 1))
             src_r = src_2.rsplit('/', 1)[-1]
             imgurl = src_l + '/' + src_r  # 合并成完整地址并下载
-            self.download(imgurl, download)
+            self.download(imgurl, download_full_path)
             self.progress[url] = (i + 1) / len(all_img)  # 更新特定 URL 的进度
-            print(self.progress[url], end=' ', flush=True)
+            print(self.progress[url], end='% ', flush=True)
         
         print(f"[{title}] - done\n")
 
@@ -248,9 +248,5 @@ if __name__ == '__main__':
     ]
 
     manager = BasicCrawler()
-
-    # manager.generate_headers()
     manager.batch_process(url_list, download_path)
-
     progress_dict = manager.get_progress()
-    # print("Progress for each URL:")
