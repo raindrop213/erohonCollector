@@ -37,3 +37,5 @@
 在项目主页上src/pic_collector源码里找找吧，不方便多说了o(￣ε￣*) 
 
 # ***to be continue...***
+
+### GUI框架来自：[TomSchimansky/CustomTkinter](https://github.com/TomSchimansky/CustomTkinter)
