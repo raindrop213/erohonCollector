@@ -22,8 +22,12 @@ class BasicCrawler:
         self.sleep_time = sleep_time
         self.random_time = random_time
         self.headers_string = headers_string
+        self.progress = {}  # 初始化进度字典
         
         self.stop_requested = False  # 用于停止线程的标志位
+
+    def get_progress(self):
+        return self.progress
 
     def chosen_headers(self):
         headers = self.headers_string.strip().split('\n')
@@ -117,18 +121,17 @@ class BasicCrawler:
 
         # 获取文件名
         all_img = all_list.find_all('img', class_='lazyload')
-        progress = 0
         for i, img in enumerate(all_img):
-            src_1 = i['data-src']
+            src_1 = img['data-src']
             src_2 = "".join(src_1.rsplit("t", 1))
             src_r = src_2.rsplit('/', 1)[-1]
             # 合并成完整地址并下载
             imgurl = src_l + '/' + src_r
             self.download(imgurl, download)
-            progress = (i + 1) / len(all_img)
+            self.progress[url] = (i + 1) / len(all_img)  # 更新特定 URL 的进度
+            print(self.progress[url], end=' ', flush=True)
             
         print(f"[{title}] - done\n")
-        return progress
 
     def get_ehentai(self, url, download_path):  # 爬 ehentai.to 后端图源
 
@@ -155,16 +158,15 @@ class BasicCrawler:
         # 获取预览图链接并改成图源链接
         all_list = soup.find(attrs={"class": "container", "id": "thumbnail-container"})
         all_img = all_list.find_all("img")
-        progress = 0
         for i, img in enumerate(all_img):
             src_1 = img['data-src']
             src_2 = src_1.rsplit("t", 1)
             src_3 = "".join(src_2)
             self.download(src_3, download)
-            progress = (i + 1) / len(all_img)
+            self.progress[url] = (i + 1) / len(all_img)  # 更新特定 URL 的进度
+            print(self.progress[url], end=' ', flush=True)
 
         print(f"[{title}] - done\n")
-        return progress
 
     def get_hanime1(self, url, download_path):  # 爬 hanime1.me 后端图源
 
@@ -204,29 +206,28 @@ class BasicCrawler:
 
         # 获取文件名
         all_img = all_list.find_all('img')
-        progress = 0
         for i, img in enumerate(all_img):
             src_1 = img['data-srcset']
             src_2 = "".join(src_1.rsplit("t", 1))
             src_r = src_2.rsplit('/', 1)[-1]
             imgurl = src_l + '/' + src_r  # 合并成完整地址并下载
             self.download(imgurl, download)
-            progress = (i + 1) / len(all_img)
+            self.progress[url] = (i + 1) / len(all_img)  # 更新特定 URL 的进度
+            print(self.progress[url], end=' ', flush=True)
         
         print(f"[{title}] - done\n")
-        return progress
 
     def batch_process(self, url_list, download_path):  # 批量处理多个链接
-        for url in url_list:
+        for idx, url in enumerate(url_list):
             if 'hanime1' in url:
-                progress = self.get_hanime1(url, download_path)
+                self.get_hanime1(url, download_path)
             elif 'nhentai' in url:
-                progress = self.get_nhentai(url, download_path)
+                self.get_nhentai(url, download_path)
             elif 'ehentai' in url:
-                progress = self.get_ehentai(url, download_path)
+                self.get_ehentai(url, download_path)
             else:
                 print('Link Error!?')
-        print('Completed all missions!',progress)
+        print('Completed all missions!', self.progress)
 
 
 if __name__ == '__main__':
@@ -241,8 +242,8 @@ if __name__ == '__main__':
 
     download_path = r'download'
     url_list = [
-        # 'https://ehentai.to/g/397083',
-        # 'https://hanime1.me/comic/75999',
+        'https://ehentai.to/g/397083',
+        'https://hanime1.me/comic/75999',
         'https://nhentai.net/g/435035/',
     ]
 
@@ -250,3 +251,6 @@ if __name__ == '__main__':
 
     # manager.generate_headers()
     manager.batch_process(url_list, download_path)
+
+    progress_dict = manager.get_progress()
+    # print("Progress for each URL:")

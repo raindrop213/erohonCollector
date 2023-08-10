@@ -8,7 +8,7 @@
 
     访问频率可调，默认0.3秒
 
-    User-Agent随机选取一行作请求头（不懂勿改）
+    User-Agent随机生成和选取一行作请求头（不懂勿改）
 
     浏览器打开 https://httpbin.org/user-agent 获取你的User-Agent
 

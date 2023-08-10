@@ -1,11 +1,17 @@
 import customtkinter
 import threading
 import sys
+# from selenium import webdriver
 from PIL import Image
 from fake_useragent import UserAgent
 from src.pdf_merge import PDFMerger
 from src.pic_collector import BasicCrawler
 import os
+
+
+# browser = webdriver.Chrome()
+# browser.get(url)
+# page_source = browser.page_source
 
 # import sys
 # def source_path(relative_path):  # 打包用的函数
@@ -52,6 +58,12 @@ class WebsiteEntry(customtkinter.CTkFrame):
     def set(self, value):
         self.entry.delete(0, "end")
         self.entry.insert(0, value)
+    
+    def set_progress(self, value):
+        self.progressbar.set(value)
+    
+    def reset_progress(self):
+        self.progressbar.set(0)
 
     def add_entry(self):
         self.master.add_entry_after(self)
@@ -89,6 +101,10 @@ class BlockWebsiteEntry(customtkinter.CTkScrollableFrame):
     def rearrange_entries(self):
         for i, entry in enumerate(self.entries):
             entry.grid(row=i, column=0, padx=(0,3), pady=(0,6), sticky="ew")
+    
+    def reset_progress(self):
+        for entry in self.entries:
+            entry.reset_progress()
 
 
 class PathEntry(customtkinter.CTkFrame):
@@ -271,6 +287,9 @@ class App(customtkinter.CTk):
         super().__init__()
         self.stop_event = threading.Event()
 
+        self.downloading = False
+        self.crawler = None
+
         # 打包用
         # bg = r'image\bg.png'
         # tips = self.tips(r'guide.txt')
@@ -289,6 +308,7 @@ class App(customtkinter.CTk):
 
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(1, weight=1)
+        
 
 
         # 加载图片
@@ -348,7 +368,7 @@ class App(customtkinter.CTk):
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button = customtkinter.CTkButton(self.first_frame, text="Stop", fg_color='#af2700', hover_color='#C74D01', command=self.stop_download)
 
-        self.header = customtkinter.CTkTextbox(self.first_frame, height=80, wrap='none')
+        self.header = customtkinter.CTkTextbox(self.first_frame, height=80, undo=True, wrap='none')
         self.header.grid(row=2, column=0, padx=10, pady=(5, 5), sticky="nsew", columnspan=2)
 
         self.refresh_button = customtkinter.CTkButton(self.first_frame, text="Refresh User-Agent", command=self.refresh_callback)
@@ -358,7 +378,7 @@ class App(customtkinter.CTk):
         self.refresh_callback()  # 初始化请求头
 
         # logs
-        self.text_1 = customtkinter.CTkTextbox(self.first_frame, wrap='none')
+        self.text_1 = customtkinter.CTkTextbox(self.first_frame, undo=True, wrap='none')
         self.text_1.grid(row=4, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_1.insert("0.0", "Logs\n\n\n")
         self.button_1 = customtkinter.CTkButton(self.first_frame, text="clear message", command=self.button_clear_callback_1)
@@ -386,7 +406,7 @@ class App(customtkinter.CTk):
 
 
         # logs
-        self.text_2 = customtkinter.CTkTextbox(self.second_frame)
+        self.text_2 = customtkinter.CTkTextbox(self.second_frame, undo=True)
         self.text_2.grid(row=3, column=0, padx=10, pady=(10, 5), sticky="nsew", columnspan=2)
         self.text_2.insert("0.0", "Logs\n\n\n\n")
         self.button_2 = customtkinter.CTkButton(self.second_frame, text="clear message", command=self.button_clear_callback_2)
@@ -417,6 +437,19 @@ class App(customtkinter.CTk):
         # 关闭GUI前结束所有任务
         self.protocol("WM_DELETE_WINDOW", self.close_event)
 
+    def update_progress_bars(self):
+        if not self.crawler:
+            return  # 如果爬虫还没创建，直接返回
+
+        progress_dict = self.crawler.get_progress()  # 从爬虫中获取进度字典
+        for entry in self.website_entry_frame.entries:
+            url = entry.get()
+            progress = progress_dict.get(url, 0)
+            print(progress)
+            entry.set_progress(progress)  # 更新进度条
+
+        if self.downloading:  # 如果仍在下载中，则继续周期性检查进度
+            self.after(200, self.update_progress_bars)
 
     def download_images_in_background(self):
         headers = self.header.get("0.0", "end").strip()
@@ -430,15 +463,21 @@ class App(customtkinter.CTk):
                 # Hide the Download button, show the Pause and Stop buttons
                 self.download_button.grid_remove()
                 self.stop_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
+                self.downloading = True  # 设置下载标志
+                self.website_entry_frame.reset_progress()  # 重置进度条
+                self.update_progress_bars()  # 开始周期性检查进度
                 self.crawler.batch_process(url_list, download_path)
             except Exception as e:
                 self.text_1.insert("end", f'Error: {e}\n')
+            finally:
+                self.downloading = False  # 清除下载标志
+                self.website_entry_frame.reset_progress()  # 重置进度条
         else:
             self.text_1.insert("end", 'Please enter URL and download path\n\n')
         # Show the Download button, hide the Pause and Stop buttons
         self.download_button.grid(row=1, column=1, padx=(5, 10), pady=5, sticky="nsew")
         self.stop_button.grid_remove()
-        self.text_1.insert("end", '*** Download Images finished ***\n\n')
+        self.text_1.insert("end", '--------------------------\n\n')
 
     def merge_pdf_in_background(self):
         paths = []
@@ -461,7 +500,7 @@ class App(customtkinter.CTk):
             self.text_2.insert("end", 'Completed all missions!\n')
         except Exception as e:
             self.text_2.insert("end", f'Error: {e}\n')
-        self.text_2.insert("end", '*** Merge PDFs finished ***\n\n')
+        self.text_2.insert("end", '--------------------------\n\n')
 
     def download_images(self):
         self.stop_event.clear()
@@ -492,6 +531,7 @@ class App(customtkinter.CTk):
 
     def stop_download(self):
         self.crawler.stop_requested = True
+        self.downloading = False  # 清除下载标志
         self.download_button.configure(text="Download")
         self.text_1.insert("end", '\n*** Stop download ***\n\n')
         # Hide Stop buttons, show the Download button
