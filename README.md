@@ -5,7 +5,7 @@
 1. URL填写要爬取的网站页面
 
 2. 点击 'Download' 下载；'stop' 终止
-    - 访问频率可调，默认0.3秒
+    - 访问频率可调，默认0.2秒
     - User-Agent：随机生成和选取一行作为请求头
     - 获取你的 [User-Agent](https://httpbin.org/user-agent)（可选）
 
