@@ -80,6 +80,8 @@ class BasicCrawler:
     def get_hanime1(self, url, download_path):  # 爬 hanime1.me 后端图源
 
         '''
+        https://hanime1.com / https://hanime1.com
+
         https://hanime1.me/comic/71275 【本子主页】
         https://t.nhentai.net/galleries/2157410/1t.jpg 【预览图】
 
