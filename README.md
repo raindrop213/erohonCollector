@@ -6,8 +6,8 @@
 
 2. 点击 'Download' 下载；'stop' 终止
     - 访问频率可调，默认0.2秒
-    - User-Agent：随机生成和选取一行作为请求头
-    - 获取你的 [User-Agent](https://httpbin.org/user-agent)（可选）
+    - User-Agent：默认随机生成和选取一行作为请求头
+    - [ 可选 ] 获取你的 [User-Agent](https://httpbin.org/user-agent)
 
 ### ***- Part B -***
 
