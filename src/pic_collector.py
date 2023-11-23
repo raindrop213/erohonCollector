@@ -76,17 +76,15 @@ class BasicCrawler:
         return filename.translate(trans_table).strip()
 
 
-    # 以下提供了针对三个具体网站的爬取方法
-    def get_hanime1(self, url, download_path):  # 爬 hanime1.me 后端图源
+    # 以下提供了针对三个具体网站的爬取方法,域名存在缩写，DDDD
+    def get_hm1(self, url, download_path):
 
         '''
-        https://hanime1.com / https://hanime1.com
+        https://hm1.me/comic/71275 【主页】
+        https://t.hm1.net/galleries/2157410/1t.jpg 【预览图】
 
-        https://hanime1.me/comic/71275 【本子主页】
-        https://t.nhentai.net/galleries/2157410/1t.jpg 【预览图】
-
-        https://hanime1.me/comic/71275/1 【点进去】
-        https://i.nhentai.net/galleries/2157410/1.jpg 【图源】
+        https://hm1.me/comic/71275/1 【点进去】
+        https://i.hm1.net/galleries/2157410/1.jpg 【图源】
 
         思路：
         1.【预览图】文件名获取（去掉t）
@@ -128,13 +126,13 @@ class BasicCrawler:
         
         print(f"[{title}] - done\n")
 
-    def get_ehentai(self, url, download_path):  # 爬 ehentai.to 后端图源
+    def get_eht(self, url, download_path):
         '''
-        https://ehentai.to/g/397083 【本子主页】
-        https://cdn.dogehls.xyz/galleries/2176760/1t.jpg 【预览图】
+        https://eht.to/g/397083 【主页】
+        https://cdn.??.xyz/galleries/2176760/1t.jpg 【预览图】
 
-        https://ehentai.to/g/397083/1 【点进去】
-        https://cdn.dogehls.xyz/galleries/2176760/1.jpg 【图源】
+        https://eht.to/g/397083/1 【点进去】
+        https://cdn.??.xyz/galleries/2176760/1.jpg 【图源】
 
         思路：
         【预览图】的域名去掉后面的第一个“t”就是【图源】了
@@ -162,13 +160,13 @@ class BasicCrawler:
 
         print(f"[{title}] - done\n")
 
-    def get_nhentai(self, url, download_path):  # 爬 nhentai.net 后端图源
+    def get_nht(self, url, download_path):
         '''
-        https://nhentai.net/g/435035/ 【本子主页】
-        https://t3.nhentai.net/galleries/2422457/1t.jpg 【预览图】
+        https://nht.net/g/435035/ 【主页】
+        https://t3.nht.net/galleries/2422457/1t.jpg 【预览图】
 
-        https://nhentai.net/g/435035/1/ 【点进去】
-        https://i7.nhentai.net/galleries/2422457/1.jpg 【图源】
+        https://nht.net/g/435035/1/ 【点进去】
+        https://i7.nht.net/galleries/2422457/1.jpg 【图源】
 
         思路：
         1.【预览图】文件名 （去掉t）
@@ -215,11 +213,11 @@ class BasicCrawler:
     def batch_process(self, url_list, download_path):  # 批量处理多个链接
         for url in url_list:
             if 'hanime1' in url:
-                self.get_hanime1(url, download_path)
+                self.get_hm1(url, download_path)
             elif 'nhentai' in url:
-                self.get_nhentai(url, download_path)
+                self.get_nht(url, download_path)
             elif 'ehentai' in url:
-                self.get_ehentai(url, download_path)
+                self.get_eht(url, download_path)
             else:
                 print('Link Error!?')
         print('Completed all missions!', self.progress)
@@ -227,17 +225,11 @@ class BasicCrawler:
 
 if __name__ == '__main__':  # 测试功能
 
-    '''
-    推荐hanime1，比较全
-    nhentai和hanime1有时候要验证，不行的话就用浏览器登一下网页，当浏览器能进了爬虫也就可以爬了，如果再不行，我也没办法
-    ehentai也挺容易被ban
-    如果有开代理的话就换换节点，挺管用的
-    '''
     download_path = r'download'
     url_list = [
-        'https://hanime1.me/comic/75999',
-        'https://ehentai.to/g/397083',
-        'https://nhentai.net/g/435035/',
+        'https://hm1.me/comic/75999',
+        'https://eht.to/g/397083',
+        'https://nht.net/g/435035/',
     ]
 
     manager = BasicCrawler()
